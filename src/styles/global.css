@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-color: #0ea5e9;
+  --background-color: #f9fafb;
+  --text-color: #111827;
+  --secondary-color: #6b7280;
+}
+
+[data-theme="dark"] {
+  --primary-color: #38bdf8;
+  --background-color: #1f2937;
+  --text-color: #f9fafb;
+  --secondary-color: #9ca3af;
+}
+
+[data-theme="forest"] {
+  --primary-color: #059669;
+  --background-color: #f0fdf4;
+  --text-color: #064e3b;
+  --secondary-color: #65a30d;
+}
+
+[data-theme="sunset"] {
+  --primary-color: #db2777;
+  --background-color: #fff1f2;
+  --text-color: #881337;
+  --secondary-color: #ea580c;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.bg-primary-600 {
+  background-color: var(--primary-color);
+}
+
+.text-primary-600 {
+  color: var(--primary-color);
+}
+
+.hover\:bg-primary-700:hover {
+  background-color: color-mix(in srgb, var(--primary-color) 85%, black);
+}
+
+.hover\:text-primary-600:hover {
+  color: var(--primary-color);
+}
+
+.focus\:border-primary-500:focus {
+  border-color: color-mix(in srgb, var(--primary-color) 85%, white);
+}
+
+.focus\:ring-primary-500:focus {
+  --tw-ring-color: color-mix(in srgb, var(--primary-color) 85%, white);
+}
+
+.text-secondary {
+  color: var(--secondary-color);
+} 
