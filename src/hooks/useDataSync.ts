@@ -10,8 +10,13 @@ interface SyncOptions<T> {
 
 export function useDataSync<T>({ key, defaultValue, debounceMs = 1000 }: SyncOptions<T>) {
   const [data, setData] = useState<T>(() => {
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : defaultValue;
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : defaultValue;
+    } catch (error) {
+      console.error(`Error loading ${key} from localStorage:`, error);
+      return defaultValue;
+    }
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,6 +25,7 @@ export function useDataSync<T>({ key, defaultValue, debounceMs = 1000 }: SyncOpt
 
   // Load initial data from server
   useEffect(() => {
+    let isMounted = true;
     const loadFromServer = async () => {
       try {
         const response = await fetch(`${API_URL}/${key}`);
@@ -27,30 +33,42 @@ export function useDataSync<T>({ key, defaultValue, debounceMs = 1000 }: SyncOpt
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const { data: serverData } = await response.json();
-        if (serverData !== null) {
+        if (serverData !== null && isMounted) {
           setData(serverData);
           localStorage.setItem(key, JSON.stringify(serverData));
         }
       } catch (error) {
         console.error(`Error loading ${key}:`, error);
-        setError(`Failed to load ${key} from server`);
+        if (isMounted) {
+          setError(`Failed to load ${key} from server`);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadFromServer();
+    return () => {
+      isMounted = false;
+    };
   }, [key]);
 
   // Save to localStorage whenever data changes
   useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (error) {
+      console.error(`Error saving ${key} to localStorage:`, error);
+    }
   }, [key, data]);
 
   // Sync with server with debounce
   useEffect(() => {
     if (syncQueue.length === 0) return;
 
+    let isMounted = true;
     const syncWithServer = async () => {
       if (isSyncing) return;
       setIsSyncing(true);
@@ -66,19 +84,28 @@ export function useDataSync<T>({ key, defaultValue, debounceMs = 1000 }: SyncOpt
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Clear sync queue on successful sync
-        setSyncQueue([]);
-        setError(null);
+        if (isMounted) {
+          // Clear sync queue on successful sync
+          setSyncQueue([]);
+          setError(null);
+        }
       } catch (error) {
         console.error(`Error syncing ${key}:`, error);
-        setError(`Failed to sync ${key} with server`);
+        if (isMounted) {
+          setError(`Failed to sync ${key} with server`);
+        }
       } finally {
-        setIsSyncing(false);
+        if (isMounted) {
+          setIsSyncing(false);
+        }
       }
     };
 
     const timeoutId = setTimeout(syncWithServer, debounceMs);
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      isMounted = false;
+    };
   }, [key, syncQueue, isSyncing, debounceMs]);
 
   // Update function that handles both local and server updates

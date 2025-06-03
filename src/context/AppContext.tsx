@@ -1,36 +1,25 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useDataSync } from '../hooks/useDataSync';
-
-export interface Event {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  type: 'meeting' | 'task' | 'reminder';
-}
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'todo' | 'in-progress' | 'completed';
-}
+import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { Task, Event, Theme, Project } from '../data/models/types';
+import { taskService } from '../data/services/taskService';
+import { eventService } from '../data/services/eventService';
+import { settingsService } from '../data/services/settingsService';
+import { projectService } from '../data/services/projectService';
 
 interface AppContextType {
   events: Event[];
   tasks: Task[];
-  addEvent: (event: Omit<Event, 'id'>) => void;
-  updateEvent: (event: Event) => void;
-  addTask: (task: Omit<Task, 'id'>) => void;
-  updateTask: (task: Task) => void;
-  deleteTask: (taskId: string) => void;
-  deleteEvent: (eventId: string) => void;
+  projects: Project[];
+  addEvent: (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updateEvent: (id: string, event: Partial<Event>) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Task>;
+  updateTask: (taskId: string, taskData: Partial<Task>) => Promise<Task | null>;
+  deleteTask: (taskId: string) => Promise<void>;
+  deleteEvent: (eventId: string) => Promise<void>;
+  updateProject: (project: Project) => Promise<Project | null>;
   theme: string;
   setTheme: (theme: string) => void;
-  customTheme: Record<string, string>;
-  setCustomTheme: (theme: Record<string, string>) => void;
+  customTheme: Theme;
+  setCustomTheme: (theme: Theme) => void;
   isLoading: boolean;
   error: string | null;
   isSyncing: boolean;
@@ -38,80 +27,179 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Default data
-const defaultEvents: Event[] = [];
-const defaultTasks: Task[] = [];
-
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const {
-    data: events,
-    setData: setEvents,
-    isLoading: eventsLoading,
-    error: eventsError,
-    isSyncing: eventsSyncing
-  } = useDataSync<Event[]>({ key: 'events', defaultValue: defaultEvents });
+  const [events, setEvents] = useState<Event[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [theme, setThemeState] = useState(settingsService.getTheme());
+  const [customTheme, setCustomThemeState] = useState(settingsService.getSettings().customTheme);
 
-  const {
-    data: tasks,
-    setData: setTasks,
-    isLoading: tasksLoading,
-    error: tasksError,
-    isSyncing: tasksSyncing
-  } = useDataSync<Task[]>({ key: 'tasks', defaultValue: defaultTasks });
-
-  const {
-    data: theme,
-    setData: setTheme,
-    isLoading: themeLoading,
-    error: themeError,
-    isSyncing: themeSyncing
-  } = useDataSync<string>({ key: 'theme', defaultValue: 'forest' });
-
-  const {
-    data: customTheme,
-    setData: setCustomTheme,
-    isLoading: customThemeLoading,
-    error: customThemeError,
-    isSyncing: customThemeSyncing
-  } = useDataSync<Record<string, string>>({ key: 'customTheme', defaultValue: {} });
-
-  const addEvent = (event: Omit<Event, 'id'>) => {
-    const newEvent = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...event
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [loadedTasks, loadedEvents, loadedProjects] = await Promise.all([
+          taskService.getAll(),
+          eventService.getAll(),
+          projectService.getAll()
+        ]);
+        setTasks(Array.isArray(loadedTasks) ? loadedTasks : []);
+        setEvents(Array.isArray(loadedEvents) ? loadedEvents : []);
+        setProjects(Array.isArray(loadedProjects) ? loadedProjects : []);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+        setTasks([]);
+        setEvents([]);
+        setProjects([]);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    setEvents(prev => [...prev, newEvent]);
+
+    loadData();
+  }, []);
+
+  const addEvent = async (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      setIsSyncing(true);
+      const newEvent = await eventService.create(event);
+      setEvents(prev => [...prev, newEvent]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add event');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const updateEvent = (updatedEvent: Event) => {
-    setEvents(prev => prev.map(event => 
-      event.id === updatedEvent.id ? updatedEvent : event
-    ));
+  const updateEvent = async (id: string, event: Partial<Event>) => {
+    try {
+      setIsSyncing(true);
+      const updatedEvent = await eventService.update(id, event);
+      if (updatedEvent) {
+        setEvents(prev => prev.map(e => e.id === id ? updatedEvent : e));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update event');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const addTask = (task: Omit<Task, 'id'>) => {
-    const newTask = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...task
-    };
-    setTasks(prev => [...prev, newTask]);
+  const addTask = async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> => {
+    try {
+      setIsSyncing(true);
+      const newTask = await taskService.create(task);
+      setTasks(prev => [...prev, newTask]);
+      return newTask;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add task');
+      throw err;
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const updateTask = (updatedTask: Task) => {
-    setTasks(prev => prev.map(task => task.id === updatedTask.id ? updatedTask : task));
+  const updateTask = async (taskId: string, taskData: Partial<Task>) => {
+    try {
+      setIsSyncing(true);
+      const updatedTask = await taskService.update(taskId, taskData);
+      if (updatedTask) {
+        setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+        return updatedTask;
+      }
+      return null;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update task');
+      throw err;
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const deleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
+  const deleteTask = async (taskId: string) => {
+    try {
+      setIsSyncing(true);
+      await taskService.delete(taskId);
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+
+      // Update projects that contain the task
+      const updatedProjects = projects.map(project => {
+        const taskIndex = project.tasks.findIndex(t => t.id === taskId);
+        if (taskIndex !== -1) {
+          const updatedTasks = project.tasks.filter(t => t.id !== taskId);
+          const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
+          const progress = updatedTasks.length > 0 
+            ? Math.round((completedTasks / updatedTasks.length) * 100)
+            : 0;
+          return {
+            ...project,
+            tasks: updatedTasks,
+            progress,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return project;
+      });
+
+      // Update projects that contained the task
+      const projectsToUpdate = updatedProjects.filter(project => 
+        project.tasks.some(t => t.id === taskId)
+      );
+
+      for (const project of projectsToUpdate) {
+        await projectService.update(project);
+      }
+
+      setProjects(updatedProjects);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete task');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const deleteEvent = (eventId: string) => {
-    setEvents(prev => prev.filter(event => event.id !== eventId));
+  const deleteEvent = async (eventId: string) => {
+    try {
+      setIsSyncing(true);
+      await eventService.delete(eventId);
+      setEvents(prev => prev.filter(e => e.id !== eventId));
+    } catch (err) {
+      console.error('Error deleting event:', err);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const isLoading = eventsLoading || tasksLoading || themeLoading || customThemeLoading;
-  const error = eventsError || tasksError || themeError || customThemeError;
-  const isSyncing = eventsSyncing || tasksSyncing || themeSyncing || customThemeSyncing;
+  const updateProject = async (project: Project) => {
+    try {
+      setIsSyncing(true);
+      const updatedProject = await projectService.update(project);
+      if (updatedProject) {
+        setProjects(prev => prev.map(p => p.id === project.id ? updatedProject : p));
+        return updatedProject;
+      }
+      return null;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update project');
+      throw err;
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const setTheme = (newTheme: string) => {
+    settingsService.setTheme(newTheme);
+    setThemeState(newTheme);
+  };
+
+  const setCustomTheme = (newTheme: Theme) => {
+    settingsService.updateSettings({ customTheme: newTheme });
+    setCustomThemeState(newTheme);
+  };
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">
@@ -122,12 +210,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const value = {
     events,
     tasks,
+    projects,
     addEvent,
     updateEvent,
     addTask,
     updateTask,
     deleteTask,
     deleteEvent,
+    updateProject,
     theme,
     setTheme,
     customTheme,

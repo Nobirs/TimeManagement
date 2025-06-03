@@ -16,15 +16,15 @@ import {
 import { ru } from 'date-fns/locale';
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useApp } from '../context/AppContext';
-import type { Event } from '../context/AppContext';
+import { Event } from '../data/models/types';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 
 const Calendar: React.FC = () => {
-  const { events, addEvent, updateEvent, deleteEvent } = useApp();
+  const { events, addEvent, updateEvent, deleteEvent, isLoading, error } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  const [newEvent, setNewEvent] = useState<Omit<Event, 'id'>>({
+  const [newEvent, setNewEvent] = useState<Omit<Event, 'id' | 'createdAt' | 'updatedAt'>>({
     title: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     time: '09:00',
@@ -56,12 +56,10 @@ const Calendar: React.FC = () => {
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
 
-    // Если нет места назначения, прекращаем выполнение
     if (!destination) {
       return;
     }
 
-    // Если место назначения то же самое, что и источник, и индекс тот же
     if (
       source.droppableId === destination.droppableId &&
       source.index === destination.index
@@ -74,18 +72,14 @@ const Calendar: React.FC = () => {
       return;
     }
 
-    // Получаем события для дня источника и дня назначения
     const sourceEvents = getEventsForDay(parseISO(source.droppableId));
     const destinationEvents = source.droppableId === destination.droppableId
       ? sourceEvents
       : getEventsForDay(parseISO(destination.droppableId));
 
-    // Создаем копию массива событий дня назначения
     const newDestinationEvents = Array.from(destinationEvents);
 
-    // Если перемещение между разными днями
     if (source.droppableId !== destination.droppableId) {
-      // Обновляем событие с новой датой и временем
       const updatedEvent = {
         ...eventToMove,
         date: destination.droppableId,
@@ -95,56 +89,56 @@ const Calendar: React.FC = () => {
         )
       };
 
-      // Вставляем событие в новую позицию
       newDestinationEvents.splice(destination.index, 0, updatedEvent);
 
-      // Обновляем времена всех событий в дне назначения
       newDestinationEvents.forEach((event, index) => {
         const newTime = format(
           addMinutes(parseISO(`${destination.droppableId}T09:00:00`), index * 30),
           'HH:mm'
         );
         if (event.id === draggableId) {
-          updateEvent({ ...event, date: destination.droppableId, time: newTime });
+          updateEvent(event.id, { date: destination.droppableId, time: newTime });
         } else {
-          updateEvent({ ...event, time: newTime });
+          updateEvent(event.id, { time: newTime });
         }
       });
     } else {
-      // Если перемещение в пределах одного дня
-      // Удаляем событие с исходной позиции
       newDestinationEvents.splice(source.index, 1);
-      // Вставляем событие в новую позицию
       newDestinationEvents.splice(destination.index, 0, eventToMove);
 
-      // Обновляем времена всех событий
       newDestinationEvents.forEach((event, index) => {
         const newTime = format(
           addMinutes(parseISO(source.droppableId + 'T09:00:00'), index * 30),
           'HH:mm'
         );
-        updateEvent({ ...event, time: newTime });
+        updateEvent(event.id, { time: newTime });
       });
     }
   };
 
-  const handleAddEvent = () => {
-    if (editingEvent) {
-      updateEvent({
-        ...editingEvent,
-        ...newEvent
+  const handleAddEvent = async () => {
+    try {
+      if (editingEvent) {
+        await updateEvent(editingEvent.id, {
+          title: newEvent.title,
+          date: newEvent.date,
+          time: newEvent.time,
+          type: newEvent.type
+        });
+        setEditingEvent(null);
+      } else {
+        await addEvent(newEvent);
+      }
+      setShowAddEvent(false);
+      setNewEvent({
+        title: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        time: '09:00',
+        type: 'meeting'
       });
-      setEditingEvent(null);
-    } else {
-      addEvent(newEvent);
+    } catch (error) {
+      console.error('Failed to save event:', error);
     }
-    setShowAddEvent(false);
-    setNewEvent({
-      title: '',
-      date: format(new Date(), 'yyyy-MM-dd'),
-      time: '09:00',
-      type: 'meeting'
-    });
   };
 
   const handleEditEvent = (event: Event) => {
@@ -158,8 +152,12 @@ const Calendar: React.FC = () => {
     setShowAddEvent(true);
   };
 
-  const handleDeleteEvent = (eventId: string) => {
-    deleteEvent(eventId);
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteEvent(eventId);
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+    }
   };
 
   const getEventTypeColor = (type: Event['type']) => {
@@ -185,6 +183,22 @@ const Calendar: React.FC = () => {
     });
     setShowAddEvent(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-error-color p-4 rounded-lg bg-red-50 border border-red-200">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col">

@@ -151,7 +151,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onClose }) => {
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <span className="font-medium capitalize block truncate" style={{ color: colors.text }}>{themeName}</span>
+                {/* <span className="font-medium capitalize block truncate" style={{ color: colors.text }}>{themeName}</span> */}
                 <div className="flex space-x-1 mt-1">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.primary }} />
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.secondary }} />

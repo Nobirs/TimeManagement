@@ -72,5 +72,5 @@ export const useInitialTheme = () => {
       setTheme(currentTheme);
       setCustomTheme(themeColors);
     }
-  }, []); // Пустой массив зависимостей, чтобы эффект выполнился только при монтировании
+  }, [theme, setTheme, setCustomTheme]); // Added missing dependencies
 }; 
