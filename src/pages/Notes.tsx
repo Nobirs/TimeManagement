@@ -3,6 +3,7 @@ import { Note } from '../data/models/types';
 import { noteService } from '../data/services/noteService';
 import NoteCard from '../components/NoteCard';
 import NoteForm from '../components/NoteForm';
+import {PlusIcon} from "@heroicons/react/24/outline";
 
 const Notes: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -113,9 +114,9 @@ const Notes: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900">Notes</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary-50 hover:bg-primary-100 transition-colors duration-200"
         >
-          New Note
+          <PlusIcon className="w-6 h-6 text-primary-600" />
         </button>
       </div>
 

@@ -116,12 +116,12 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onClose }) => {
           <option value="autumn">Autumn</option>
           <option value="mint">Mint</option>
         </select>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
-        >
-          Upload Custom Theme
-        </button>
+        {/*<button*/}
+        {/*  onClick={() => fileInputRef.current?.click()}*/}
+        {/*  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"*/}
+        {/*>*/}
+        {/*  Upload Custom Theme*/}
+        {/*</button>*/}
         <input
           ref={fileInputRef}
           type="file"

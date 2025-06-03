@@ -33,7 +33,7 @@ export const createProject = async (req: Request, res: Response) => {
   try {
     const project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'progress'> = req.body;
     
-    if (!project.name?.trim()) {
+    if (!project.title?.trim()) {
       return res.status(400).json({ error: 'Project name is required' });
     }
 
@@ -62,7 +62,7 @@ export const updateProject = async (req: Request, res: Response) => {
     const { id } = req.params;
     const updatedProject: Project = req.body;
     
-    if (!updatedProject.name?.trim()) {
+    if (!updatedProject.title?.trim()) {
       return res.status(400).json({ error: 'Project name is required' });
     }
 
