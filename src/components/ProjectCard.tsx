@@ -1,7 +1,7 @@
 import React from 'react';
 import { Project, Task } from '../data/models/types';
 import { format } from 'date-fns';
-import { useApp } from '../context/AppContext';
+import {useApp} from "../context/AppContext";
 
 interface ProjectCardProps {
   project: Project;
@@ -16,10 +16,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   onEdit,
   onDelete,
   onAddTask,
-  onRemoveTask,
+  onRemoveTask
 }) => {
-  const { updateProject } = useApp();
-
+  const { updateTask } = useApp();
   const getStatusColor = (status: Project['status']) => {
     switch (status) {
       case 'active':
@@ -54,37 +53,28 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   const progress = calculateProgress();
 
-  const handleTaskStatusChange = async (taskId: string, currentStatus: Task['status']) => {
+  const handleTaskStatusChange = async (taskId: string) => {
     const task = project.tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const newStatus: Task['status'] = currentStatus === 'todo' 
-      ? 'in-progress' 
-      : currentStatus === 'in-progress' 
-        ? 'completed' 
-        : 'todo';
+    const newStatus = task.status === 'todo'
+        ? 'in-progress'
+        : task.status === 'in-progress'
+            ? 'completed'
+            : 'todo';
 
     try {
-      const updatedTasks = project.tasks.map(t => 
-        t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t
-      );
-
-      const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
-      const progress = Math.round((completedTasks / updatedTasks.length) * 100);
-
-      const updatedProject: Project = {
-        ...project,
-        tasks: updatedTasks,
-        progress,
+      // Использовать updateTask из контекста
+      await updateTask(taskId, {
+        ...task,
+        status: newStatus,
         updatedAt: new Date().toISOString()
-      };
-
-      await updateProject(updatedProject);
-      onEdit(updatedProject);
+      });
     } catch (error) {
       console.error('Failed to update task status:', error);
     }
   };
+
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
@@ -181,7 +171,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      handleTaskStatusChange(task.id, task.status);
+                      handleTaskStatusChange(task.id);
                     }}
                     className={`w-4 h-4 rounded-full border-2 ${
                       task.status === 'completed' ? 'bg-green-500 border-transparent' :

@@ -6,7 +6,7 @@ import { Task } from '../data/models/types';
 import TaskForm from '../components/TaskForm';
 
 const Tasks: React.FC = () => {
-  const { tasks, projects, addTask, updateTask, deleteTask, error, updateProject } = useApp();
+  const { tasks, addTask, updateTask, deleteTask, error } = useApp();
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState<Partial<Task>>({
@@ -65,32 +65,19 @@ const Tasks: React.FC = () => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const newStatus = currentStatus === 'todo' 
-      ? 'in-progress' 
-      : currentStatus === 'in-progress' 
-        ? 'completed' 
-        : 'todo';
+    const newStatus = currentStatus === 'todo'
+        ? 'in-progress'
+        : currentStatus === 'in-progress'
+            ? 'completed'
+            : 'todo';
 
     try {
-      await updateTask(taskId, { ...task, status: newStatus });
-
-      // Update project progress if task belongs to a project
-      if (task.projectId) {
-        const project = projects.find(p => p.id === task.projectId);
-        if (project) {
-          const projectTasks = tasks.filter(t => t.projectId === project.id);
-          const completedTasks = projectTasks.filter(t => 
-            t.id === taskId ? newStatus === 'completed' : t.status === 'completed'
-          ).length;
-          const progress = Math.round((completedTasks / projectTasks.length) * 100);
-
-          await updateProject({
-            ...project,
-            progress,
-            updatedAt: new Date().toISOString()
-          });
-        }
-      }
+      // Упрощенный вызов - контекст сам обновит связанные проекты
+      await updateTask(taskId, {
+        ...task,
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Failed to update task status:', error);
     }
@@ -134,7 +121,7 @@ const Tasks: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 py-8">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
         <button

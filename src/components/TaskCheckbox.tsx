@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { CheckIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 interface TaskCheckboxProps {
@@ -44,4 +44,4 @@ const TaskCheckbox: React.FC<TaskCheckboxProps> = ({ status, onChange, size = 'm
   );
 };
 
-export default TaskCheckbox; 
+export default memo(TaskCheckbox);

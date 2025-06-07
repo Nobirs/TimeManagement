@@ -78,7 +78,7 @@ export const updateProject = async (req: Request, res: Response) => {
       id,
       updatedAt: new Date().toISOString(),
       createdAt: projects[index].createdAt, // preserve original creation date
-      tasks: projects[index].tasks // preserve tasks
+      tasks: updatedProject.tasks // update tasks
     };
     
     projects[index] = projectToUpdate;

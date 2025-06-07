@@ -4,36 +4,32 @@ import { projectService } from '../data/services/projectService';
 import ProjectCard from '../components/ProjectCard';
 import ProjectForm from '../components/ProjectForm';
 import { useApp } from '../context/AppContext';
+import {PlusIcon} from "@heroicons/react/24/outline";
 
 const Projects: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    projects,
+    loadProjects,
+    updateProject,
+    deleteProject,
+    tasks: allTasks,
+    addTask: addGlobalTask,
+    isLoading: appLoading,
+  } = useApp();
+
+  // Убрать локальное состояние проектов
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'archived'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const { tasks: allTasks, addTask: addGlobalTask } = useApp();
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+
 
   useEffect(() => {
     loadProjects();
   }, []);
 
-  const loadProjects = async () => {
-    try {
-      setLoading(true);
-      const data = await projectService.getAll();
-      setProjects(data);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load projects');
-      console.error('Error loading projects:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleCreateProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
@@ -41,7 +37,6 @@ const Projects: React.FC = () => {
       setShowForm(false);
       loadProjects();
     } catch (err) {
-      setError('Failed to create project');
       console.error('Error creating project:', err);
     }
   };
@@ -49,16 +44,14 @@ const Projects: React.FC = () => {
   const handleUpdateProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!editingProject) return;
     try {
-      await projectService.update({
+      await updateProject({
         ...projectData,
         id: editingProject.id,
         createdAt: editingProject.createdAt,
         updatedAt: new Date().toISOString()
       });
       setEditingProject(undefined);
-      loadProjects();
     } catch (err) {
-      setError('Failed to update project');
       console.error('Error updating project:', err);
     }
   };
@@ -66,10 +59,8 @@ const Projects: React.FC = () => {
   const handleDeleteProject = async (projectId: string) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
     try {
-      await projectService.delete(projectId);
-      loadProjects();
+      await deleteProject(projectId);
     } catch (err) {
-      setError('Failed to delete project');
       console.error('Error deleting project:', err);
     }
   };
@@ -79,18 +70,13 @@ const Projects: React.FC = () => {
     setShowTaskModal(true);
   };
 
+
   const handleSelectTask = async (task: Task) => {
     if (!selectedProjectId) return;
-    
+
     try {
       const project = projects.find(p => p.id === selectedProjectId);
       if (!project) return;
-
-      // Check if task is already in project
-      if (project.tasks.some(t => t.id === task.id)) {
-        setError('Task is already in this project');
-        return;
-      }
 
       const updatedProject: Project = {
         ...project,
@@ -98,18 +84,20 @@ const Projects: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
 
-      await projectService.update(updatedProject);
+      // Использовать updateProject из контекста
+      await updateProject(updatedProject);
       setShowTaskModal(false);
       setSelectedProjectId(null);
-      loadProjects();
     } catch (err) {
-      setError('Failed to add task to project');
       console.error('Error adding task to project:', err);
     }
   };
 
   const handleCreateNewTask = async () => {
-    if (!selectedProjectId) return;
+    if (!selectedProjectId) {
+      console.log("Project ID to create new Task is null");
+      return;
+    }
     
     const title = window.prompt('Task title:');
     if (!title) return;
@@ -121,13 +109,9 @@ const Projects: React.FC = () => {
       priority: 'medium' as const,
       status: 'todo' as const,
     };
-    
+
     try {
       const newTask = await addGlobalTask(newTaskData);
-      if (!newTask) {
-        throw new Error('Failed to create task');
-      }
-
       const project = projects.find(p => p.id === selectedProjectId);
       if (!project) return;
 
@@ -137,12 +121,11 @@ const Projects: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
 
-      await projectService.update(updatedProject);
+      // Использовать updateProject из контекста
+      await updateProject(updatedProject);
       setShowTaskModal(false);
       setSelectedProjectId(null);
-      loadProjects();
     } catch (err) {
-      setError('Failed to create and add task');
       console.error('Error creating task:', err);
     }
   };
@@ -158,13 +141,12 @@ const Projects: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
 
-      await projectService.update(updatedProject);
-      loadProjects();
+      await updateProject(updatedProject);
     } catch (err) {
-      setError('Failed to remove task');
       console.error('Error removing task:', err);
     }
   };
+
 
   const filteredProjects = projects.filter(project => {
     const matchesFilter = filter === 'all' || project.status === filter;
@@ -174,7 +156,7 @@ const Projects: React.FC = () => {
     return matchesFilter && matchesSearch;
   });
 
-  if (loading) {
+  if (appLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -188,17 +170,17 @@ const Projects: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary-50 hover:bg-primary-100 transition-colors duration-200"
         >
-          New Project
+          <PlusIcon className="w-6 h-6 text-primary-600" />
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-red-600">{error}</p>
-        </div>
-      )}
+      {/*{error && (*/}
+      {/*  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">*/}
+      {/*    <p className="text-red-600">{error}</p>*/}
+      {/*  </div>*/}
+      {/*)}*/}
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -308,7 +290,7 @@ const Projects: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-200px)]">
         {filteredProjects.map(project => (
           <ProjectCard
             key={project.id}

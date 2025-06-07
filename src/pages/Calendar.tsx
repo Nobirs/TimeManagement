@@ -201,7 +201,7 @@ const Calendar: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col py-8">
       <div className="flex-none flex items-center justify-between mb-2">
         <div className="flex items-center space-x-3">
           <h1 className="text-lg font-bold text-gray-900">Calendar</h1>

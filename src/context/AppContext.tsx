@@ -1,4 +1,4 @@
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
 import { Task, Event, Theme, Project } from '../data/models/types';
 import { taskService } from '../data/services/taskService';
 import { eventService } from '../data/services/eventService';
@@ -9,17 +9,25 @@ interface AppContextType {
   events: Event[];
   tasks: Task[];
   projects: Project[];
+
   addEvent: (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateEvent: (id: string, event: Partial<Event>) => Promise<void>;
+  deleteEvent: (eventId: string) => Promise<void>;
+
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Task>;
   updateTask: (taskId: string, taskData: Partial<Task>) => Promise<Task | null>;
   deleteTask: (taskId: string) => Promise<void>;
-  deleteEvent: (eventId: string) => Promise<void>;
+  loadTasks: () => Promise<void>;
+
   updateProject: (project: Project) => Promise<Project | null>;
+  loadProjects: () => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
+
   theme: string;
   setTheme: (theme: string) => void;
   customTheme: Theme;
   setCustomTheme: (theme: Theme) => void;
+
   isLoading: boolean;
   error: string | null;
   isSyncing: boolean;
@@ -37,30 +45,64 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [theme, setThemeState] = useState(settingsService.getTheme());
   const [customTheme, setCustomThemeState] = useState(settingsService.getSettings().customTheme);
 
+  const loadTasks = useCallback(async () => {
+    try {
+      const loadedTasks = await taskService.getAll();
+      setTasks(Array.isArray(loadedTasks) ? loadedTasks : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load Tasks");
+    }
+  }, []);
+
+  const loadEvents = useCallback(async () => {
+    try {
+      const loadedEvents = await eventService.getAll();
+      setEvents(Array.isArray(loadedEvents) ? loadedEvents : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load Events");
+    }
+  }, []);
+
+  const loadProjects = useCallback(async () => {
+    try {
+      const loadedProjects = await projectService.getAll();
+      setProjects(Array.isArray(loadedProjects) ? loadedProjects : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load Projects");
+    }
+  }, []);
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const [loadedTasks, loadedEvents, loadedProjects] = await Promise.all([
-          taskService.getAll(),
-          eventService.getAll(),
-          projectService.getAll()
-        ]);
-        setTasks(Array.isArray(loadedTasks) ? loadedTasks : []);
-        setEvents(Array.isArray(loadedEvents) ? loadedEvents : []);
-        setProjects(Array.isArray(loadedProjects) ? loadedProjects : []);
+        await Promise.all([loadTasks(), loadEvents(), loadProjects()]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
-        setTasks([]);
-        setEvents([]);
-        setProjects([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadData();
+  }, [loadTasks, loadEvents, loadProjects]);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'sync-projects') {
+        loadProjects();
+      } else if (e.key === 'sync-tasks') {
+        loadTasks();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [loadProjects, loadTasks]);
+
+  const triggerSync = useCallback((key: 'projects' | 'tasks') => {
+    localStorage.setItem(`sync-${key}`, Date.now().toString());
   }, []);
 
   const addEvent = async (event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -106,9 +148,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const updateTask = async (taskId: string, taskData: Partial<Task>) => {
     try {
       setIsSyncing(true);
-      const updatedTask = await taskService.update(taskId, taskData);
+      const updatedTask = await taskService.update(taskId, {
+        ...taskData,
+        updatedAt: new Date().toISOString()
+      });
       if (updatedTask) {
         setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+
+        const updatedProjects = projects.map(project => {
+          if(project.tasks.some(t => t.id === taskId)) {
+            const tasks = project.tasks.map(t => t.id === taskId ? updatedTask : t);
+            const completedTasks = tasks.filter(t => t.status === 'completed').length;
+            const progress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+            projectService.update({
+              ...project,
+              tasks,
+              progress,
+              updatedAt: new Date().toISOString()})
+            return {
+              ...project,
+              tasks,
+              progress,
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return project;
+        });
+
+        setProjects(updatedProjects);
+        triggerSync('projects');
         return updatedTask;
       }
       return null;
@@ -126,18 +194,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       await taskService.delete(taskId);
       setTasks(prev => prev.filter(t => t.id !== taskId));
 
-      // Update projects that contain the task
+      // Обновляем проекты
       const updatedProjects = projects.map(project => {
         const taskIndex = project.tasks.findIndex(t => t.id === taskId);
         if (taskIndex !== -1) {
-          const updatedTasks = project.tasks.filter(t => t.id !== taskId);
-          const completedTasks = updatedTasks.filter(t => t.status === 'completed').length;
-          const progress = updatedTasks.length > 0 
-            ? Math.round((completedTasks / updatedTasks.length) * 100)
-            : 0;
+          const tasks = project.tasks.filter(t => t.id !== taskId);
+          const completedTasks = tasks.filter(t => t.status === 'completed').length;
+          const progress = tasks.length > 0
+              ? Math.round((completedTasks / tasks.length) * 100)
+              : 0;
+
           return {
             ...project,
-            tasks: updatedTasks,
+            tasks,
             progress,
             updatedAt: new Date().toISOString()
           };
@@ -145,16 +214,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return project;
       });
 
-      // Update projects that contained the task
-      const projectsToUpdate = updatedProjects.filter(project => 
-        project.tasks.some(t => t.id === taskId)
-      );
-
-      for (const project of projectsToUpdate) {
-        await projectService.update(project);
-      }
-
       setProjects(updatedProjects);
+      triggerSync('projects');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete task');
     } finally {
@@ -174,12 +235,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const deleteProject = async (projectId: string) => {
+    try{
+      setIsSyncing(true);
+      tasks.map(t => {
+        if(t.projectId === projectId) {
+          t.projectId = undefined;
+        }
+      });
+      await projectService.delete(projectId);
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+    } catch (err) {
+      console.error('Error deleting project:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const updateProject = async (project: Project) => {
     try {
       setIsSyncing(true);
-      const updatedProject = await projectService.update(project);
+      const updatedProject = await projectService.update({
+        ...project,
+        updatedAt: new Date().toISOString()
+      });
+
       if (updatedProject) {
         setProjects(prev => prev.map(p => p.id === project.id ? updatedProject : p));
+        triggerSync('projects');
         return updatedProject;
       }
       return null;
@@ -217,7 +300,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateTask,
     deleteTask,
     deleteEvent,
+    deleteProject,
     updateProject,
+    loadProjects,
+    loadTasks,
     theme,
     setTheme,
     customTheme,

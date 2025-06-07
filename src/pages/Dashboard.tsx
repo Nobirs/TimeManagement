@@ -64,14 +64,19 @@ const Dashboard: React.FC = () => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const newStatus = currentStatus === 'todo' 
-      ? 'in-progress' 
-      : currentStatus === 'in-progress' 
-        ? 'completed' 
-        : 'todo';
+    const newStatus = currentStatus === 'todo'
+        ? 'in-progress'
+        : currentStatus === 'in-progress'
+            ? 'completed'
+            : 'todo';
 
     try {
-      await updateTask(taskId, { ...task, status: newStatus });
+      // Использовать updateTask из контекста
+      await updateTask(taskId, {
+        ...task,
+        status: newStatus,
+        updatedAt: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Failed to update task status:', error);
     }
@@ -183,14 +188,14 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
+    <div className="h-full flex flex-col py-8">
+      <div className="flex justify-between items-center mb-4 sticky-x-auto">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <div className="text-sm text-gray-500">
           {format(today, 'EEEE, MMMM do, yyyy')}
         </div>
       </div>
-
+<div className="overflow-y-auto max-h-[calc(100vh-200px)]">
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 min-h-0">
           {/* Today's Tasks */}
@@ -320,6 +325,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </DragDropContext>
+</div>
     </div>
   );
 };
