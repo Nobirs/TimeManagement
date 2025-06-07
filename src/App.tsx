@@ -1,13 +1,19 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
+
 import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
 import Tasks from './pages/Tasks';
 import Projects from './pages/Projects';
 import Notes from './pages/Notes';
+import TimeTracker from "./pages/TimeTracker";
 import Layout from './components/Layout';
+
 import { useInitialTheme } from './hooks/useInitialTheme';
+import Goals from "./pages/Goals";
+import Habits from "./pages/Habits";
+import PomodoroTimer from "./pages/PomodoroTimer";
 
 const AppContent: React.FC = () => {
   useInitialTheme();
@@ -21,6 +27,10 @@ const AppContent: React.FC = () => {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/notes" element={<Notes />} />
+          <Route path="/tracker" element={<TimeTracker />} />
+          <Route path="/goals" element={<Goals />} />
+          <Route path="/habits" element={<Habits />} />
+          <Route path="/pomodoro" element={<PomodoroTimer />} />
         </Routes>
       </Layout>
     </Router>
