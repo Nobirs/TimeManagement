@@ -119,6 +119,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <NavLink to="/goals" icon="goals">Goals</NavLink>
               <NavLink to="/habits" icon="habits">Habits</NavLink>
               <NavLink to="/pomodoro" icon="pomodoro" >Pomodoro Timer</NavLink>
+              <NavLink to="/roadmap" icon="roadmap" >Roadmap</NavLink>
             </nav>
           </div>
         </div>

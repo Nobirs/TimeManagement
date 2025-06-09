@@ -14,6 +14,7 @@ import { useInitialTheme } from './hooks/useInitialTheme';
 import Goals from "./pages/Goals";
 import Habits from "./pages/Habits";
 import PomodoroTimer from "./pages/PomodoroTimer";
+import RoadmapPage from "./pages/RoadmapPage";
 
 const AppContent: React.FC = () => {
   useInitialTheme();
@@ -31,6 +32,7 @@ const AppContent: React.FC = () => {
           <Route path="/goals" element={<Goals />} />
           <Route path="/habits" element={<Habits />} />
           <Route path="/pomodoro" element={<PomodoroTimer />} />
+          <Route path="/roadmap" element={<RoadmapPage />} />
         </Routes>
       </Layout>
     </Router>
