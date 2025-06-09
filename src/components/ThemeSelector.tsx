@@ -13,6 +13,12 @@ const predefinedThemes = {
     text: '#111827',
     secondary: '#6b7280'
   },
+  light2: {
+    primary: '#304f5e',
+    background: '#f9fafb',
+    text: '#101215',
+    secondary: '#66c1a7'
+  },
   dark: {
     primary: '#38bdf8',
     background: '#1f2937',

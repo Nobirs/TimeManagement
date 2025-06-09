@@ -37,6 +37,10 @@ const CustomNode = ({ type, label }: { type: NodeType, label: string }) => {
     const baseClasses = "px-4 py-3 rounded-xl text-center font-medium shadow-md flex items-center justify-center relative";
     let specificClasses = "";
 
+    let [text, setText] = useState(label || '');
+    const [isEditing, setIsEditing] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
     switch (type) {
         case 'goal':
             specificClasses = "bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold border-2 border-white min-w-[200px]";
@@ -55,11 +59,71 @@ const CustomNode = ({ type, label }: { type: NodeType, label: string }) => {
             break;
     }
 
+    useEffect(() => {
+        if(isEditing && inputRef.current) {
+            inputRef.current.focus();
+        }
+    }, [isEditing]);
+
+    const handleDoubleClick = () => {
+        setIsEditing(true);
+    };
+
+    const handleChange = (e: { target: { value: React.SetStateAction<string | ''>; }; }) => {
+        setText(e.target.value);
+    };
+
+    const handleBlur = () => {
+        saveChanges();
+    }
+
+    const handleKeyDown = (e: { key: string; }) => {
+        if(e.key === 'Enter') {
+            saveChanges();
+        } else if (e.key === 'Escape') {
+            cancelEditing();
+        }
+    };
+
+    const saveChanges = () => {
+        setIsEditing(false);
+        if(text.trim() !== label && text !== '') {
+            //onSave(text.trim());
+        } else {
+            setText(label);
+        }
+    };
+
+    const cancelEditing = () => {
+        setIsEditing(false);
+        setText(label);
+    }
+
+
     return (
-        <div className={`${baseClasses} ${specificClasses}`}>
-            <Handle type="target" position={Position.Top} className="w-3 h-3 bg-blue-500" />
-            <div className="px-2 py-1">{label}</div>
-            <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-blue-500" />
+        <div className={`${baseClasses} ${specificClasses} w-px-[100] h-px-[100]`}>
+            <Handle id='1' type="target" position={Position.Top} className="w-3 h-3 bg-blue-500" />
+            <Handle id='10' type="source" position={Position.Top} className="w-3 h-3 bg-blue-500" />
+            <Handle id='2' type="target" position={Position.Right} className="w-3 h-3 bg-blue-500" />
+            <Handle id='20' type="source" position={Position.Right} className="w-3 h-3 bg-blue-500" />
+            {
+                isEditing ? (
+                    <input
+                        type="text"
+                        ref={inputRef}
+                        value={text}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        onKeyDown={handleKeyDown}
+                        className="px-2 py-1"/>
+                ) : (
+                    <div onDoubleClick={handleDoubleClick} className="px-2 py-1">{text}</div>
+                )
+            }
+            <Handle id='3' type="target" position={Position.Bottom} className="w-3 h-3 bg-blue-500" />
+            <Handle id='30' type="source" position={Position.Bottom} className="w-3 h-3 bg-blue-500" />
+            <Handle id='4' type="target" position={Position.Left} className="w-3 h-3 bg-blue-500" />
+            <Handle id='40' type="source" position={Position.Left} className="w-3 h-3 bg-blue-500" />
         </div>
     );
 };
