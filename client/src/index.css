@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@tailwindcss base;
+@tailwindcss components;
+@tailwindcss utilities;
+ 
+@layer base {
+  body {
+    @apply bg-gray-50;
+  }
+} 
+
+/* Базовые стили для всех иконок */
+.icon svg {
+  width: 1em;
+  height: 1em;
+  stroke-width: 1.5; 
+  stroke: currentColor;
+  fill: none;
+  vertical-align: middle;
+}
+
+.icon-primary svg {
+  stroke: var(--color-primary);
+}
+
+.icon-danger svg {
+  stroke: var(--color-danger);
+}

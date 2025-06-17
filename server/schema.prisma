@@ -1,0 +1,281 @@
+// schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  password         String
+  name             String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  settings         Json? // Для UserSettings
+  tasks            Task[]
+  events           Event[]
+  projects         Project[]
+  notes            Note[]
+  goals            Goal[]
+  habits           Habit[]
+  pomodoroSessions PomodoroSession[]
+  timeTrackings    TimeTracking[]
+  roadmaps         Roadmap[]
+}
+
+model Task {
+  id              String            @id @default(uuid())
+  title           String
+  description     String?
+  status          TaskStatus        @default(todo)
+  priority        TaskPriority      @default(medium)
+  dueDate         DateTime
+  project         Project?          @relation(fields: [projectId], references: [id])
+  projectId       String?
+  user            User              @relation(fields: [userId], references: [id])
+  userId          String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  notes           Note[]
+  goals           GoalTask[]
+  PomodoroSession PomodoroSession[]
+}
+
+model Event {
+  id        String    @id @default(uuid())
+  title     String
+  date      DateTime
+  time      String?
+  type      EventType
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Project {
+  id          String          @id @default(uuid())
+  title       String
+  description String?
+  status      ProjectStatus   @default(active)
+  priority    ProjectPriority @default(medium)
+  startDate   DateTime?
+  endDate     DateTime?
+  progress    Int?            @default(0)
+  tasks       Task[]
+  members     String[] // User IDs
+  tags        String[]
+  color       String?
+  user        User            @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  notes       Note[]
+  goals       GoalProject[]
+}
+
+model Note {
+  id               String       @id @default(uuid())
+  title            String
+  content          String?
+  category         NoteCategory @default(other)
+  tags             String[]
+  color            String?
+  isPinned         Boolean      @default(false)
+  relatedTask      Task?        @relation(fields: [relatedTaskId], references: [id])
+  relatedTaskId    String?
+  relatedProject   Project?     @relation(fields: [relatedProjectId], references: [id])
+  relatedProjectId String?
+  user             User         @relation(fields: [userId], references: [id])
+  userId           String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Goal {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime
+  dueDate     DateTime
+  priority    GoalPriority  @default(medium)
+  progress    Int           @default(0)
+  status      GoalStatus    @default(not_started)
+  tasks       GoalTask[]
+  projects    GoalProject[]
+  user        User          @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Habit {
+  id          String            @id @default(uuid())
+  title       String
+  description String?
+  frequency   HabitFrequency    @default(daily)
+  timeOfDay   HabitTime         @default(anytime)
+  streak      Int               @default(0)
+  completions HabitCompletion[]
+  user        User              @relation(fields: [userId], references: [id])
+  userId      String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model PomodoroSession {
+  id        String    @id @default(uuid())
+  startTime DateTime
+  endTime   DateTime?
+  duration  Int?
+  task      Task?     @relation(fields: [taskId], references: [id])
+  taskId    String?
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime  @default(now())
+}
+
+model TimeTracking {
+  id        String    @id @default(uuid())
+  taskName  String
+  startTime DateTime
+  endTime   DateTime?
+  duration  Int?
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime  @default(now())
+}
+
+model Roadmap {
+  id        String        @id @default(uuid())
+  name      String
+  nodes     RoadmapNode[]
+  edges     RoadmapEdge[]
+  user      User          @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model RoadmapNode {
+  id        String   @id @default(uuid())
+  roadmap   Roadmap  @relation(fields: [roadmapId], references: [id])
+  roadmapId String
+  type      NodeType
+  positionX Float
+  positionY Float
+  data      Json // { label: string, ... }
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RoadmapEdge {
+  id        String   @id @default(uuid())
+  roadmap   Roadmap  @relation(fields: [roadmapId], references: [id])
+  roadmapId String
+  source    String // Node ID
+  target    String // Node ID
+  createdAt DateTime @default(now())
+}
+
+model GoalTask {
+  id        String   @id @default(uuid())
+  goal      Goal     @relation(fields: [goalId], references: [id])
+  goalId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  taskId    String
+  createdAt DateTime @default(now())
+}
+
+model GoalProject {
+  id        String   @id @default(uuid())
+  goal      Goal     @relation(fields: [goalId], references: [id])
+  goalId    String
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+  createdAt DateTime @default(now())
+}
+
+model HabitCompletion {
+  id        String   @id @default(uuid())
+  habit     Habit    @relation(fields: [habitId], references: [id])
+  habitId   String
+  date      DateTime
+  createdAt DateTime @default(now())
+}
+
+// Enums
+enum TaskStatus {
+  todo
+  in_progress
+  completed
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum EventType {
+  meeting
+  task
+  reminder
+}
+
+enum ProjectStatus {
+  active
+  completed
+  archived
+}
+
+enum ProjectPriority {
+  low
+  medium
+  high
+}
+
+enum NoteCategory {
+  work
+  personal
+  idea
+  other
+}
+
+enum GoalStatus {
+  not_started
+  in_progress
+  completed
+  archived
+}
+
+enum GoalPriority {
+  low
+  medium
+  high
+}
+
+enum HabitFrequency {
+  daily
+  weekly
+  monthly
+}
+
+enum HabitTime {
+  morning
+  afternoon
+  evening
+  anytime
+}
+
+enum NodeType {
+  goal
+  step
+  milestone
+  project
+  task
+}
