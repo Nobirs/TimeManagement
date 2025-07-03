@@ -21,7 +21,7 @@ interface AppContextType {
   deleteEvent: (eventId: string) => Promise<void>;
 
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Task>;
-  updateTask: (taskId: string, taskData: Partial<Task>) => Promise<Task | null>;
+  updateTask: (taskId: string, taskData: Task) => Promise<Task | null>;
   deleteTask: (taskId: string) => Promise<void>;
   loadTasks: () => Promise<void>;
 
@@ -194,7 +194,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const updateTask = async (taskId: string, taskData: Partial<Task>) => {
+  const updateTask = async (taskId: string, taskData: Task) => {
     try {
       setIsSyncing(true);
       const updatedTask = await taskService.update(taskId, {
@@ -205,7 +205,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
 
         const updatedProjects = projects.map(project => {
-          if(project.tasks.some(t => t.id === taskId)) {
+          if(project.tasks?.some(t => t.id === taskId)) {
             const tasks = project.tasks.map(t => t.id === taskId ? updatedTask : t);
             const completedTasks = tasks.filter(t => t.status === 'completed').length;
             const progress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
@@ -245,12 +245,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Обновляем проекты
       const updatedProjects = projects.map(project => {
-        const taskIndex = project.tasks.findIndex(t => t.id === taskId);
+        const taskIndex = project.tasks?.findIndex(t => t.id === taskId);
         if (taskIndex !== -1) {
-          const tasks = project.tasks.filter(t => t.id !== taskId);
-          const completedTasks = tasks.filter(t => t.status === 'completed').length;
-          const progress = tasks.length > 0
-              ? Math.round((completedTasks / tasks.length) * 100)
+          const tasks = project.tasks?.filter(t => t.id !== taskId);
+          const completedTasks = tasks?.filter(t => t.status === 'completed').length ?? 0;
+          const progress = (tasks?.length || 0) > 0
+              ? Math.round((completedTasks / (tasks?.length ?? 1)) * 100)
               : 0;
 
           return {

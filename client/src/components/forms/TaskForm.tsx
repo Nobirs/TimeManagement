@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Task } from '@time-management/shared-types';
+import { type Task, Priority, TaskStatus } from '@time-management/shared-types';
 
 interface TaskFormProps {
   task: Task;
@@ -63,7 +63,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel }) => {
           type="date"
           id="dueDate"
           name="dueDate"
-          value={formData.dueDate?.split('T')[0]}
+          value={
+            formData.dueDate instanceof Date ? 
+            formData.dueDate.toISOString().split('T')[0] : formData.dueDate.split('T')[0]
+
+          }
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         />
@@ -80,9 +84,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel }) => {
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         >
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
+          {
+            Object.entries(Priority).map(([key, value]) => (
+              <option key={value} value={value}>{key}</option>
+            ))
+          }
         </select>
       </div>
 
@@ -97,9 +103,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ task, onSubmit, onCancel }) => {
           onChange={handleChange}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
         >
-          <option value="todo">To Do</option>
-          <option value="in-progress">In Progress</option>
-          <option value="completed">Completed</option>
+          {
+            Object.entries(TaskStatus).map(([key, value]) => (
+              <option key={value} value={value}>{key}</option>
+            ))
+          }
         </select>
       </div>
 

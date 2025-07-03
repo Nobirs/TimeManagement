@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, isBefore, isAfter } from 'date-fns';
 import { PlusIcon, TrashIcon, PencilIcon, CheckIcon } from '@heroicons/react/24/outline';
-import GoalForm from '../components/GoalForm';
+import GoalForm from '../components/forms/GoalForm';
 
 type GoalStatus = 'not-started' | 'in-progress' | 'completed' | 'archived';
 type GoalPriority = 'high' | 'medium' | 'low';
@@ -175,7 +175,7 @@ const Goals: React.FC = () => {
             </div>
 
             {showForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
                         <GoalForm
                             goal={editingGoal}

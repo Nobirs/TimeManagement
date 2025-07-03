@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Project, Task } from '@time-management/shared-types';
 import { projectService } from '../data/services/projectService';
 import ProjectCard from '../components/ProjectCard';
-import ProjectForm from '../components/ProjectForm';
+import ProjectForm from '../components/forms/ProjectForm';
 import { useApp } from '../context/AppContext';
 import {PlusIcon} from "@heroicons/react/24/outline";
 
@@ -207,7 +207,7 @@ const Projects: React.FC = () => {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
             <h2 className="text-2xl font-bold mb-4">Create New Project</h2>
             <ProjectForm

@@ -1,8 +1,9 @@
-import React, { memo } from 'react';
+import React, { useCallback, memo } from 'react';
 import { CheckIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import { TaskStatus } from '@time-management/shared-types';
 
 interface TaskCheckboxProps {
-  status: 'todo' | 'in-progress' | 'completed';
+  status: TaskStatus;
   onChange: () => void;
   size?: 'sm' | 'md';
 }
@@ -13,21 +14,21 @@ const TaskCheckbox: React.FC<TaskCheckboxProps> = ({ status, onChange, size = 'm
     return `relative rounded-full transition-all duration-200 cursor-pointer ${sizeClasses}`;
   };
 
-  const getStatusClasses = () => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-500 border-transparent hover:bg-green-600';
-      case 'in-progress':
-        return 'bg-blue-500 border-transparent hover:bg-blue-600';
-      default:
-        return 'bg-white border-gray-300 hover:border-gray-400';
+  const getStatusClasses = useCallback(
+    () => {
+    const statusColors = {
+      completed: 'bg-green-500 border-transparent hover:bg-green-600',
+      'in-progress': 'bg-blue-500 border-transparent hover:bg-blue-600',
+      todo: 'bg-white border-gray-300 hover:border-gray-400'
     }
-  };
+    return statusColors[status] ?? statusColors.todo;
+  }, [status, onChange]);
 
-  const getIconClasses = () => {
+  const getIconClasses = useCallback(
+    () => {
     const sizeClasses = size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3';
     return `absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${sizeClasses} text-white`;
-  };
+  }, [status, onChange]);
 
   return (
     <button

@@ -1,25 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
-import { useApp } from '../context/AppContext';
-import type { Task } from '@time-management/shared-types';
-import TaskForm from '../components/TaskForm';
+import React, { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { PlusIcon, TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { useApp } from "../context/AppContext";
+import type { Task } from "@time-management/shared-types";
+import TaskForm from "../components/forms/TaskForm";
 
 const Tasks: React.FC = () => {
   const { tasks, addTask, updateTask, deleteTask, error } = useApp();
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState<Partial<Task>>({
-    title: '',
-    description: '',
-    dueDate: format(new Date(), 'yyyy-MM-dd'),
-    priority: 'medium',
-    status: 'todo'
+    title: "",
+    description: "",
+    dueDate: format(new Date(), "yyyy-MM-dd"),
+    priority: "medium",
+    status: "todo",
   });
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<Task['status'] | 'all'>('all');
-  const [priorityFilter, setPriorityFilter] = useState<Task['priority'] | 'all'>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<Task["status"] | "all">(
+    "all"
+  );
+  const [priorityFilter, setPriorityFilter] = useState<
+    Task["priority"] | "all"
+  >("all");
 
   useEffect(() => {
     setLoading(false);
@@ -30,14 +34,14 @@ const Tasks: React.FC = () => {
       await addTask(task);
       setShowAddTask(false);
       setNewTask({
-        title: '',
-        description: '',
-        dueDate: format(new Date(), 'yyyy-MM-dd'),
-        priority: 'medium',
-        status: 'todo'
+        title: "",
+        description: "",
+        dueDate: format(new Date(), "yyyy-MM-dd"),
+        priority: "medium",
+        status: "todo",
       });
     } catch (error) {
-      console.error('Error adding task:', error);
+      console.error("Error adding task:", error);
     }
   };
 
@@ -46,61 +50,68 @@ const Tasks: React.FC = () => {
       await updateTask(task.id, task);
       setEditingTask(null);
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error("Error updating task:", error);
     }
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) {
+    if (!window.confirm("Are you sure you want to delete this task?")) {
       return;
     }
     try {
       await deleteTask(taskId);
     } catch (error) {
-      console.error('Error deleting task:', error);
+      console.error("Error deleting task:", error);
     }
   };
 
-  const handleTaskStatusChange = async (taskId: string, currentStatus: string) => {
-    const task = tasks.find(t => t.id === taskId);
+  const handleTaskStatusChange = async (
+    taskId: string,
+    currentStatus: string
+  ) => {
+    const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    const newStatus = currentStatus === 'todo'
-        ? 'in-progress'
-        : currentStatus === 'in-progress'
-            ? 'completed'
-            : 'todo';
+    const newStatus =
+      currentStatus === "todo"
+        ? "in-progress"
+        : currentStatus === "in-progress"
+        ? "completed"
+        : "todo";
 
     try {
       // Упрощенный вызов - контекст сам обновит связанные проекты
       await updateTask(taskId, {
         ...task,
         status: newStatus,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Failed to update task status:', error);
+      console.error("Failed to update task status:", error);
     }
   };
 
-  const getPriorityColor = (priority: Task['priority']) => {
+  const getPriorityColor = (priority: Task["priority"]) => {
     switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
+      case "high":
+        return "bg-red-100 text-red-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-green-100 text-green-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+    const matchesStatus =
+      statusFilter === "all" || task.status === statusFilter;
+    const matchesPriority =
+      priorityFilter === "all" || task.priority === priorityFilter;
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
@@ -113,11 +124,7 @@ const Tasks: React.FC = () => {
   }
 
   if (error) {
-    return (
-      <div className="text-red-600 text-center p-4">
-        {error}
-      </div>
-    );
+    return <div className="text-red-600 text-center p-4">{error}</div>;
   }
 
   return (
@@ -128,11 +135,11 @@ const Tasks: React.FC = () => {
           onClick={() => {
             setEditingTask(null);
             setNewTask({
-              title: '',
-              description: '',
-              dueDate: format(new Date(), 'yyyy-MM-dd'),
-              priority: 'medium',
-              status: 'todo'
+              title: "",
+              description: "",
+              dueDate: format(new Date(), "yyyy-MM-dd"),
+              priority: "medium",
+              status: "todo",
             });
             setShowAddTask(true);
           }}
@@ -144,28 +151,32 @@ const Tasks: React.FC = () => {
       </div>
 
       {showAddTask && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <TaskForm
-            task={newTask as Task}
-            onSubmit={handleAddTask}
-            onCancel={() => {
-              setShowAddTask(false);
-              setEditingTask(null);
-            }}
-          />
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <TaskForm
+              task={newTask as Task}
+              onSubmit={handleAddTask}
+              onCancel={() => {
+                setShowAddTask(false);
+                setEditingTask(null);
+              }}
+            />
+          </div>
         </div>
       )}
 
       {editingTask && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <TaskForm
-            task={editingTask}
-            onSubmit={handleEditTask}
-            onCancel={() => {
-              setEditingTask(null);
-              setShowAddTask(false);
-            }}
-          />
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <TaskForm
+              task={editingTask}
+              onSubmit={handleEditTask}
+              onCancel={() => {
+                setEditingTask(null);
+                setShowAddTask(false);
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -179,7 +190,9 @@ const Tasks: React.FC = () => {
         />
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as Task['status'] | 'all')}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as Task["status"] | "all")
+          }
           className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="all">All Status</option>
@@ -189,7 +202,9 @@ const Tasks: React.FC = () => {
         </select>
         <select
           value={priorityFilter}
-          onChange={(e) => setPriorityFilter(e.target.value as Task['priority'] | 'all')}
+          onChange={(e) =>
+            setPriorityFilter(e.target.value as Task["priority"] | "all")
+          }
           className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="all">All Priority</option>
@@ -208,22 +223,32 @@ const Tasks: React.FC = () => {
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
-                  <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(task.priority)}`}>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {task.title}
+                  </h3>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(
+                      task.priority
+                    )}`}
+                  >
                     {task.priority}
                   </span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    task.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      task.status === "completed"
+                        ? "bg-green-100 text-green-800"
+                        : task.status === "in-progress"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-800"
+                    }`}
+                  >
                     {task.status}
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">{task.description}</p>
                 {task.dueDate && (
                   <span className="text-sm text-gray-500 mt-2 block">
-                    Due: {format(new Date(task.dueDate), 'MMM d, yyyy')}
+                    Due: {format(new Date(task.dueDate), "MMM d, yyyy")}
                   </span>
                 )}
               </div>
@@ -231,13 +256,18 @@ const Tasks: React.FC = () => {
                 <button
                   onClick={() => handleTaskStatusChange(task.id, task.status)}
                   className={`px-3 py-1 rounded-md text-sm ${
-                    task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    task.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
+                    task.status === "completed"
+                      ? "bg-green-100 text-green-800"
+                      : task.status === "in-progress"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-gray-100 text-gray-800"
                   }`}
                 >
-                  {task.status === 'todo' ? 'Start' :
-                   task.status === 'in-progress' ? 'Complete' : 'Reopen'}
+                  {task.status === "todo"
+                    ? "Start"
+                    : task.status === "in-progress"
+                    ? "Complete"
+                    : "Reopen"}
                 </button>
                 <button
                   onClick={() => setEditingTask(task)}
@@ -260,4 +290,4 @@ const Tasks: React.FC = () => {
   );
 };
 
-export default Tasks; 
+export default Tasks;

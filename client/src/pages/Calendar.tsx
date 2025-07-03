@@ -343,7 +343,7 @@ const Calendar: React.FC = () => {
 
             {/* Add/Edit Event Modal */}
             {showAddEvent && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center">
                 <div className="bg-white rounded-lg p-6 w-full max-w-md">
                   <h2 className="text-lg font-semibold mb-4">
                     {editingEvent ? 'Edit Event' : 'Add New Event'}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Note } from '@time-management/shared-types';
 import { noteService } from '../data/services/noteService';
 import NoteCard from '../components/NoteCard';
-import NoteForm from '../components/NoteForm';
+import NoteForm from '../components/forms/NoteForm';
 import {PlusIcon} from "@heroicons/react/24/outline";
 
 const Notes: React.FC = () => {
@@ -162,7 +162,7 @@ const Notes: React.FC = () => {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
             <h2 className="text-2xl font-bold mb-4">Create New Note</h2>
             <NoteForm

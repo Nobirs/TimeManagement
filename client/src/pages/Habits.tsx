@@ -8,7 +8,7 @@ import {
     ArrowLeftIcon,
     ArrowRightIcon
 } from '@heroicons/react/24/outline';
-import HabitForm from '../components/HabitForm';
+import HabitForm from '../components/forms/HabitForm';
 
 type HabitFrequency = 'daily' | 'weekly' | 'monthly';
 type HabitTime = 'morning' | 'afternoon' | 'evening' | 'anytime';
@@ -192,7 +192,7 @@ const Habits: React.FC = () => {
             )}
 
             {showForm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
                         <HabitForm
                             habit={editingHabit}

@@ -20,10 +20,16 @@ export interface User extends BaseEntity {
   roadmaps?: Roadmap[];
 }
 
+export enum TaskStatus {
+  TODO="todo",
+  InProgress="in-progress",
+  Completed="completed"
+}
+
 export interface Task extends BaseEntity {
   title: string;
   description?: string;
-  status: 'todo' | 'in-progress' | 'completed';
+  status: TaskStatus;
   priority: Priority;
   dueDate: string | Date;
   projectId?: string;
@@ -39,13 +45,19 @@ export interface Event extends BaseEntity {
   userId: string; // Добавлено
 }
 
+export enum ProjectStatus {
+  Active = 'active',
+  Completed = 'completed',
+  Archived = 'archived'
+}
+
 export interface Project extends BaseEntity {
   title: string;
   description?: string;
-  status: 'active' | 'completed' | 'archived';
+  status: ProjectStatus;
   priority: Priority;
-  startDate?: string | Date;
-  endDate?: string | Date;
+  startDate?: string | number | Date;
+  endDate?: string | number | Date;
   progress?: number;
   tasks?: Task[];
   members: string[];
@@ -157,4 +169,11 @@ export type ApiResponse<T> = {
   data: T | null;
   error: string | null;
   status: number;
+}
+
+export interface Theme {
+  primary: string;
+  background: string;
+  text: string;
+  secondary: string;
 };

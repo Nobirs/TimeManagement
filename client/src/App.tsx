@@ -12,16 +12,16 @@ import Goals from "./pages/Goals";
 import Habits from "./pages/Habits";
 import PomodoroTimer from "./pages/PomodoroTimer";
 import RoadmapPage from "./pages/RoadmapPage";
-import Layout from './components/Layout';
+import Layout from './components/Layout/Layout';
 import { createBrowserRouter, RouterProvider, Outlet, useLocation, Navigate } from 'react-router-dom';
 
 const AuthCheck = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 
-  if (!isAuthenticated && location.pathname !== '/login' && location.pathname !== '/register') {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+  // if (!isAuthenticated && location.pathname !== '/login' && location.pathname !== '/register') {
+  //   return <Navigate to="/login" state={{ from: location }} replace />;
+  // }
 
   return <Outlet />;
 };

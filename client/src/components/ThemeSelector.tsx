@@ -60,6 +60,12 @@ const predefinedThemes = {
     background: '#f0fdfa',
     text: '#134e4a',
     secondary: '#14b8a6'
+  },
+  lufga: {
+    primary: '#ebff57',
+    background: '#28292C',
+    text: '#000000',
+    secondary: '#a2f7a1'
   }
 };
 
@@ -113,14 +119,9 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onClose }) => {
           onChange={(e) => handleThemeChange(e.target.value)}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white"
         >
-          <option value="light">Light</option>
-          <option value="dark">Dark</option>
-          <option value="forest">Forest</option>
-          <option value="sunset">Sunset</option>
-          <option value="ocean">Ocean</option>
-          <option value="lavender">Lavender</option>
-          <option value="autumn">Autumn</option>
-          <option value="mint">Mint</option>
+          {Object.keys(predefinedThemes).map((themeName) => (
+            <option value={themeName}>{themeName.charAt(0).toUpperCase() + themeName.slice(1)}</option>
+          ))}
         </select>
         {/*<button*/}
         {/*  onClick={() => fileInputRef.current?.click()}*/}
@@ -157,7 +158,6 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onClose }) => {
                 />
               </div>
               <div className="min-w-0 flex-1">
-                {/* <span className="font-medium capitalize block truncate" style={{ color: colors.text }}>{themeName}</span> */}
                 <div className="flex space-x-1 mt-1">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.primary }} />
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors.secondary }} />
