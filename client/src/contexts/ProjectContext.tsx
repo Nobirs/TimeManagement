@@ -1,7 +1,14 @@
-import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
-import type { Project, Task } from '@time-management/shared-types';
-import { projectService } from '../data/services/projectService';
-import { taskService } from '../data/services/taskService';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+  useCallback,
+} from "react";
+import type { Project, Task } from "@time-management/shared-types";
+import { projectService } from "../data/services/projectService";
+import { taskService } from "../data/services/taskService";
 
 interface ProjectContextType {
   projects: Project[];
@@ -15,7 +22,9 @@ interface ProjectContextType {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
-export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const ProjectProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +43,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [loadProjects]);
 
   const triggerSync = useCallback(() => {
-    localStorage.setItem('sync-projects', Date.now().toString());
+    localStorage.setItem("sync-projects", Date.now().toString());
   }, []);
 
   const updateProject = async (project: Project) => {
@@ -42,17 +51,19 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsSyncing(true);
       const updatedProject = await projectService.update({
         ...project,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
       if (updatedProject) {
-        setProjects(prev => prev.map(p => p.id === project.id ? updatedProject : p));
+        setProjects((prev) =>
+          prev.map((p) => (p.id === project.id ? updatedProject : p))
+        );
         triggerSync();
         return updatedProject;
       }
       return null;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update project');
+      setError(err instanceof Error ? err.message : "Failed to update project");
       throw err;
     } finally {
       setIsSyncing(false);
@@ -72,16 +83,19 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
       });
 
       await projectService.delete(projectId);
-      setProjects(prev => prev.filter(p => p.id !== projectId));
+      setProjects((prev) => prev.filter((p) => p.id !== projectId));
       triggerSync();
     } catch (err) {
-      console.error('Error deleting project:', err);
+      console.error("Error deleting project:", err);
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const assignTaskToProject = (taskId: string, projectId: string | undefined) => {
+  const assignTaskToProject = (
+    taskId: string,
+    projectId: string | undefined
+  ) => {
     // Заглушка для логики привязки задач (если нужно напрямую управлять из этого контекста)
   };
 
@@ -92,20 +106,18 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     deleteProject,
     assignTaskToProject,
     isSyncing,
-    error
+    error,
   };
 
   return (
-    <ProjectContext.Provider value={value}>
-      {children}
-    </ProjectContext.Provider>
+    <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>
   );
 };
 
 export const useProject = () => {
   const context = useContext(ProjectContext);
   if (context === undefined) {
-    throw new Error('useProject must be used within a ProjectProvider');
+    throw new Error("useProject must be used within a ProjectProvider");
   }
   return context;
 };

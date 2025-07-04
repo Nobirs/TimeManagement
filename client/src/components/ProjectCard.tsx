@@ -1,7 +1,7 @@
 import React, { useCallback, memo } from 'react';
 import {type Project, ProjectStatus, type Task, TaskStatus, Priority } from '@time-management/shared-types';
 import { format } from 'date-fns';
-import {useApp} from "../context/AppContext.tsx";
+import {useApp} from "../contexts/AppContext.tsx";
 import ProjectTask from './ProjectTask.tsx';
 
 interface ProjectCardProps {

@@ -3,7 +3,7 @@ import type { Project, Task } from '@time-management/shared-types';
 import { projectService } from '../data/services/projectService';
 import ProjectCard from '../components/ProjectCard';
 import ProjectForm from '../components/forms/ProjectForm';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../contexts/AppContext';
 import {PlusIcon} from "@heroicons/react/24/outline";
 
 const Projects: React.FC = () => {

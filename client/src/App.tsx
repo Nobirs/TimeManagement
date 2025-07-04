@@ -1,5 +1,5 @@
-import { AppProvider } from './context/AppProvider';
-import { useAuth } from './context/AuthContext';
+import { AppProvider } from './contexts/AppProvider';
+import { useAuth } from './contexts/AuthContext';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard';

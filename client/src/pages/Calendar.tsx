@@ -15,7 +15,7 @@ import {
 } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../contexts/AppContext';
 import type { Event } from '@time-management/shared-types';
 import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 

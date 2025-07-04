@@ -1,6 +1,6 @@
 // src/pages/PomodoroTimer.tsx
 import React, {useEffect, useRef, useState} from 'react';
-import {useApp} from '../context/AppContext';
+import {useApp} from '../contexts/AppContext';
 import type {Task} from '@time-management/shared-types';
 import {PauseIcon, PlayIcon, PlusIcon, StopIcon, XMarkIcon} from '@heroicons/react/24/outline';
 

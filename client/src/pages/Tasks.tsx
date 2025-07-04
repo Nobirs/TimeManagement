@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { PlusIcon, TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
-import { useApp } from "../context/AppContext";
+import { useApp } from "../contexts/AppContext";
 import type { Task } from "@time-management/shared-types";
 import TaskForm from "../components/forms/TaskForm";
 

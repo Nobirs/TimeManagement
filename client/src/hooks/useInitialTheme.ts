@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../contexts/AppContext';
 
 const predefinedThemes = {
   light: {

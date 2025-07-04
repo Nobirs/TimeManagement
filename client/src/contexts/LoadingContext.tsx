@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 interface LoadingContextType {
   isGlobalLoading: boolean;
@@ -8,7 +8,9 @@ interface LoadingContextType {
 
 const LoadingContext = createContext<LoadingContextType | undefined>(undefined);
 
-export const LoadingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const LoadingProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [loadingCount, setLoadingCount] = useState(0);
 
   const startLoading = () => setLoadingCount((prev) => prev + 1);
@@ -21,16 +23,14 @@ export const LoadingProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   return (
-    <LoadingContext.Provider value={value}>
-      {children}
-    </LoadingContext.Provider>
+    <LoadingContext.Provider value={value}>{children}</LoadingContext.Provider>
   );
 };
 
 export const useLoading = () => {
   const context = useContext(LoadingContext);
   if (context === undefined) {
-    throw new Error('useLoading must be used within a LoadingProvider');
+    throw new Error("useLoading must be used within a LoadingProvider");
   }
   return context;
 };

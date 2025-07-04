@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useApp } from '../context/AppContext.tsx';
+import { useApp } from '../contexts/AppContext.tsx';
 import Icon from './Icon';
 
 interface ThemeSelectorProps {
