@@ -1,5 +1,5 @@
-import { AppProvider } from './context/AppContext';
-import { useAuth, AuthProvider } from './context/AuthContext';
+import { AppProvider } from './context/AppProvider';
+import { useAuth } from './context/AuthContext';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard';
@@ -61,11 +61,9 @@ const router = createBrowserRouter([
 
 const App = () => {
   return (
-    <AuthProvider>
       <AppProvider>
         <RouterProvider router={router} />
       </AppProvider>
-    </AuthProvider>
   );
 };
 
