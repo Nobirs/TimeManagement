@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { PlusIcon, TrashIcon, PencilIcon } from "@heroicons/react/24/outline";
-import { useApp } from "../contexts/AppContext";
-import type { Task } from "@time-management/shared-types";
+import { useTask } from "../contexts/TaskContext";
+import { type Task, TaskStatus, Priority } from "@time-management/shared-types";
 import TaskForm from "../components/forms/TaskForm";
 
 const Tasks: React.FC = () => {
-  const { tasks, addTask, updateTask, deleteTask, error } = useApp();
+  const { tasks, addTask, updateTask, deleteTask, error } = useTask();
   const [showAddTask, setShowAddTask] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [newTask, setNewTask] = useState<Partial<Task>>({
     title: "",
     description: "",
     dueDate: format(new Date(), "yyyy-MM-dd"),
-    priority: "medium",
-    status: "todo",
+    priority: Priority.Medium,
+    status: TaskStatus.TODO,
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,8 +37,8 @@ const Tasks: React.FC = () => {
         title: "",
         description: "",
         dueDate: format(new Date(), "yyyy-MM-dd"),
-        priority: "medium",
-        status: "todo",
+        priority: Priority.Medium,
+        status: TaskStatus.TODO,
       });
     } catch (error) {
       console.error("Error adding task:", error);
@@ -73,11 +73,11 @@ const Tasks: React.FC = () => {
     if (!task) return;
 
     const newStatus =
-      currentStatus === "todo"
-        ? "in-progress"
-        : currentStatus === "in-progress"
-        ? "completed"
-        : "todo";
+      currentStatus === TaskStatus.TODO
+        ? TaskStatus.InProgress
+        : currentStatus === TaskStatus.InProgress
+        ? TaskStatus.Completed
+        : TaskStatus.TODO;
 
     try {
       // Упрощенный вызов - контекст сам обновит связанные проекты
@@ -107,7 +107,7 @@ const Tasks: React.FC = () => {
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchTerm.toLowerCase());
+      task.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || task.status === statusFilter;
     const matchesPriority =
@@ -138,8 +138,8 @@ const Tasks: React.FC = () => {
               title: "",
               description: "",
               dueDate: format(new Date(), "yyyy-MM-dd"),
-              priority: "medium",
-              status: "todo",
+              priority: Priority.Medium,
+              status: TaskStatus.TODO,
             });
             setShowAddTask(true);
           }}

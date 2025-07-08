@@ -8,6 +8,7 @@ import React, {
 import type { Task } from "@time-management/shared-types";
 import { taskService } from "../data/services/taskService";
 import { projectService } from "../data/services/projectService";
+import { useProject } from "./ProjectContext";
 
 interface TaskContextType {
   tasks: Task[];
@@ -30,6 +31,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { updateProject } = useProject();
 
   const loadTasks = useCallback(async () => {
     try {
@@ -86,7 +88,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
                 ? Math.round((completedTasks / tasks.length) * 100)
                 : 0;
 
-            projectService.update({
+            updateProject({
               ...project,
               tasks,
               progress,

@@ -1,67 +1,77 @@
-import React, { useState, useEffect } from 'react';
-import type { Project, Task } from '@time-management/shared-types';
-import { projectService } from '../data/services/projectService';
-import ProjectCard from '../components/ProjectCard';
-import ProjectForm from '../components/forms/ProjectForm';
-import { useApp } from '../contexts/AppContext';
-import {PlusIcon} from "@heroicons/react/24/outline";
+import React, { useState, useEffect } from "react";
+import {
+  Priority,
+  TaskStatus,
+  type Project,
+  type Task,
+} from "@time-management/shared-types";
+import { projectService } from "../data/services/projectService";
+import ProjectCard from "../components/ProjectCard";
+import ProjectForm from "../components/forms/ProjectForm";
+import { useProject } from "../contexts/ProjectContext";
+import { useTask } from "../contexts/TaskContext";
+import { PlusIcon } from "@heroicons/react/24/outline";
+import { useLoading } from "../contexts/LoadingContext";
 
 const Projects: React.FC = () => {
-  const {
-    projects,
-    loadProjects,
-    updateProject,
-    deleteProject,
-    tasks: allTasks,
-    addTask: addGlobalTask,
-    isLoading: appLoading,
-  } = useApp();
+  const { projects, loadProjects, updateProject, deleteProject } = useProject();
+
+  const { tasks: allTasks, addTask: addGlobalTask } = useTask();
+
+  const { isGlobalLoading: appLoading } = useLoading();
 
   // Убрать локальное состояние проектов
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed' | 'archived'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState<
+    "all" | "active" | "completed" | "archived"
+  >("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     loadProjects();
   }, []);
 
-
-  const handleCreateProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleCreateProject = async (
+    projectData: Omit<Project, "id" | "createdAt" | "updatedAt">
+  ) => {
     try {
       await projectService.create(projectData);
       setShowForm(false);
       loadProjects();
     } catch (err) {
-      console.error('Error creating project:', err);
+      console.error("Error creating project:", err);
     }
   };
 
-  const handleUpdateProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateProject = async (
+    projectData: Omit<Project, "id" | "createdAt" | "updatedAt">
+  ) => {
     if (!editingProject) return;
     try {
       await updateProject({
         ...projectData,
         id: editingProject.id,
         createdAt: editingProject.createdAt,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
       setEditingProject(undefined);
     } catch (err) {
-      console.error('Error updating project:', err);
+      console.error("Error updating project:", err);
     }
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    if (!window.confirm('Are you sure you want to delete this project?')) return;
+    if (!window.confirm("Are you sure you want to delete this project?"))
+      return;
     try {
       await deleteProject(projectId);
     } catch (err) {
-      console.error('Error deleting project:', err);
+      console.error("Error deleting project:", err);
     }
   };
 
@@ -70,18 +80,17 @@ const Projects: React.FC = () => {
     setShowTaskModal(true);
   };
 
-
   const handleSelectTask = async (task: Task) => {
     if (!selectedProjectId) return;
 
     try {
-      const project = projects.find(p => p.id === selectedProjectId);
+      const project = projects.find((p) => p.id === selectedProjectId);
       if (!project) return;
 
       const updatedProject: Project = {
         ...project,
-        tasks: [...project.tasks, task],
-        updatedAt: new Date().toISOString()
+        tasks: [...(project.tasks || []), task],
+        updatedAt: new Date().toISOString(),
       };
 
       // Использовать updateProject из контекста
@@ -89,7 +98,7 @@ const Projects: React.FC = () => {
       setShowTaskModal(false);
       setSelectedProjectId(null);
     } catch (err) {
-      console.error('Error adding task to project:', err);
+      console.error("Error adding task to project:", err);
     }
   };
 
@@ -98,27 +107,28 @@ const Projects: React.FC = () => {
       console.log("Project ID to create new Task is null");
       return;
     }
-    
-    const title = window.prompt('Task title:');
+
+    const title = window.prompt("Task title:");
     if (!title) return;
-    
+
     const newTaskData = {
+      userId: "1", // TODO: shouldn't be here
       title,
-      description: '',
-      dueDate: new Date().toISOString().split('T')[0],
-      priority: 'medium' as const,
-      status: 'todo' as const,
+      description: "",
+      dueDate: new Date().toISOString().split("T")[0],
+      priority: Priority.Medium,
+      status: TaskStatus.TODO,
     };
 
     try {
       const newTask = await addGlobalTask(newTaskData);
-      const project = projects.find(p => p.id === selectedProjectId);
+      const project = projects.find((p) => p.id === selectedProjectId);
       if (!project) return;
 
       const updatedProject: Project = {
         ...project,
-        tasks: [...project.tasks, newTask],
-        updatedAt: new Date().toISOString()
+        tasks: [...(project.tasks || []), newTask],
+        updatedAt: new Date().toISOString(),
       };
 
       // Использовать updateProject из контекста
@@ -126,33 +136,35 @@ const Projects: React.FC = () => {
       setShowTaskModal(false);
       setSelectedProjectId(null);
     } catch (err) {
-      console.error('Error creating task:', err);
+      console.error("Error creating task:", err);
     }
   };
 
   const handleRemoveTask = async (projectId: string, taskId: string) => {
     try {
-      const project = projects.find(p => p.id === projectId);
+      const project = projects.find((p) => p.id === projectId);
       if (!project) return;
 
       const updatedProject = {
         ...project,
-        tasks: project.tasks.filter(t => t.id !== taskId),
-        updatedAt: new Date().toISOString()
+        tasks: project.tasks?.filter((t) => t.id !== taskId),
+        updatedAt: new Date().toISOString(),
       };
 
       await updateProject(updatedProject);
     } catch (err) {
-      console.error('Error removing task:', err);
+      console.error("Error removing task:", err);
     }
   };
 
-
-  const filteredProjects = projects.filter(project => {
-    const matchesFilter = filter === 'all' || project.status === filter;
-    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredProjects = projects.filter((project) => {
+    const matchesFilter = filter === "all" || project.status === filter;
+    const matchesSearch =
+      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.tags.some((tag) =>
+        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     return matchesFilter && matchesSearch;
   });
 
@@ -188,14 +200,14 @@ const Projects: React.FC = () => {
             type="text"
             placeholder="Search projects..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
         <div className="flex gap-2">
           <select
             value={filter}
-            onChange={e => setFilter(e.target.value as typeof filter)}
+            onChange={(e) => setFilter(e.target.value as typeof filter)}
             className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="all">All Projects</option>
@@ -256,7 +268,9 @@ const Projects: React.FC = () => {
                 Create New Task
               </button>
 
-              <h3 className="text-lg font-semibold mb-2">Select Existing Task</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Select Existing Task
+              </h3>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {allTasks.map((task: Task) => (
                   <div
@@ -265,20 +279,30 @@ const Projects: React.FC = () => {
                     onClick={() => handleSelectTask(task)}
                   >
                     <div className="font-medium">{task.title}</div>
-                    <div className="text-sm text-gray-500">{task.description}</div>
+                    <div className="text-sm text-gray-500">
+                      {task.description}
+                    </div>
                     <div className="flex gap-2 mt-1">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        task.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          task.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : task.status === "in-progress"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
                         {task.status}
                       </span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        task.priority === 'high' ? 'bg-red-100 text-red-800' :
-                        task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-green-100 text-green-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          task.priority === "high"
+                            ? "bg-red-100 text-red-800"
+                            : task.priority === "medium"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-green-100 text-green-800"
+                        }`}
+                      >
                         {task.priority}
                       </span>
                     </div>
@@ -291,7 +315,7 @@ const Projects: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-200px)]">
-        {filteredProjects.map(project => (
+        {filteredProjects.map((project) => (
           <ProjectCard
             key={project.id}
             project={project}
@@ -312,4 +336,4 @@ const Projects: React.FC = () => {
   );
 };
 
-export default Projects; 
+export default Projects;

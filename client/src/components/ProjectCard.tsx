@@ -1,8 +1,14 @@
-import React, { useCallback, memo } from 'react';
-import {type Project, ProjectStatus, type Task, TaskStatus, Priority } from '@time-management/shared-types';
-import { format } from 'date-fns';
-import {useApp} from "../contexts/AppContext.tsx";
-import ProjectTask from './ProjectTask.tsx';
+import React, { useCallback, memo } from "react";
+import {
+  type Project,
+  ProjectStatus,
+  type Task,
+  TaskStatus,
+  Priority,
+} from "@time-management/shared-types";
+import { format } from "date-fns";
+import { useTask } from "../contexts/TaskContext.tsx";
+import ProjectTask from "./ProjectTask.tsx";
 
 interface ProjectCardProps {
   project: Project;
@@ -17,33 +23,33 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   onEdit,
   onDelete,
   onAddTask,
-  onRemoveTask
+  onRemoveTask,
 }) => {
-  const { updateTask } = useApp();
+  const { updateTask } = useTask();
   const getStatusColor = (status: ProjectStatus) => {
     const statusColors = {
-      active: 'bg-green-100 text-green-800',
-      completed: 'bg-blue-100 text-blue-800',
-      archived: 'bg-gray-100 text-gray-800',
-      default: 'bg-gray-100 text-gray-800'
-    }
+      active: "bg-green-100 text-green-800",
+      completed: "bg-blue-100 text-blue-800",
+      archived: "bg-gray-100 text-gray-800",
+      default: "bg-gray-100 text-gray-800",
+    };
     return statusColors[status] ?? statusColors.default;
   };
 
   const getPriorityColor = (priority: Priority) => {
     const priorityColors = {
-      high: 'bg-red-100 text-red-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      low: 'bg-green-100 text-green-800',
-      default: 'bg-gray-100 text-gray-800'
-    }
+      high: "bg-red-100 text-red-800",
+      medium: "bg-yellow-100 text-yellow-800",
+      low: "bg-green-100 text-green-800",
+      default: "bg-gray-100 text-gray-800",
+    };
     return priorityColors[priority] ?? priorityColors.default;
   };
 
-  const calculateProgress = useCallback(
-    () => {
+  const calculateProgress = useCallback(() => {
     if (project.tasks?.length === 0) return 0;
-    const completedTasks = project.tasks?.filter(task => task.status === 'completed').length ?? 0;
+    const completedTasks =
+      project.tasks?.filter((task) => task.status === "completed").length ?? 0;
     return Math.round((completedTasks / (project.tasks?.length ?? 1)) * 100);
   }, [project.tasks]);
 
@@ -51,32 +57,36 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   const handleTaskStatusChange = useCallback(
     async (taskId: string) => {
-    const task = project.tasks?.find(t => t.id === taskId);
-    if (!task) return;
+      const task = project.tasks?.find((t) => t.id === taskId);
+      if (!task) return;
 
-    const newStatus: TaskStatus = task.status === TaskStatus.TODO
-        ? TaskStatus.InProgress
-        : task.status === TaskStatus.InProgress
-            ? TaskStatus.Completed
-            : TaskStatus.TODO;
+      const newStatus: TaskStatus =
+        task.status === TaskStatus.TODO
+          ? TaskStatus.InProgress
+          : task.status === TaskStatus.InProgress
+          ? TaskStatus.Completed
+          : TaskStatus.TODO;
 
-    try {
-      await updateTask(taskId, {
-        ...task,
-        status: newStatus,
-        updatedAt: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Failed to update task status:', error);
-    }
-  }, [project, project.tasks, updateTask]);
-
+      try {
+        await updateTask(taskId, {
+          ...task,
+          status: newStatus,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error("Failed to update task status:", error);
+      }
+    },
+    [project, project.tasks, updateTask]
+  );
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {project.title}
+          </h3>
           <p className="text-sm text-gray-500 mt-1">{project.description}</p>
         </div>
         <div className="flex space-x-2">
@@ -84,30 +94,61 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             onClick={() => onEdit(project)}
             className="p-1 text-gray-500 hover:text-gray-700"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
             </svg>
           </button>
           <button
             onClick={() => onDelete(project.id)}
             className="p-1 text-gray-500 hover:text-red-600"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
             </svg>
           </button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(project.status)}`}>
+        <span
+          className={`px-2 py-1 rounded-full text-xs ${getStatusColor(
+            project.status
+          )}`}
+        >
           {project.status}
         </span>
-        <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(project.priority)}`}>
+        <span
+          className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(
+            project.priority
+          )}`}
+        >
           {project.priority}
         </span>
         {project.tags.map((tag, index) => (
-          <span key={index} className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+          <span
+            key={index}
+            className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800"
+          >
             {tag}
           </span>
         ))}
@@ -126,23 +167,33 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           disabled
           className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-not-allowed opacity-75"
           style={{
-            background: `linear-gradient(to right, ${project.color} ${progress}%, #e5e7eb ${progress}%)`
+            background: `linear-gradient(to right, ${project.color} ${progress}%, #e5e7eb ${progress}%)`,
           }}
         />
       </div>
 
       <div className="flex justify-between text-sm text-gray-500 mb-4">
         <div>
-          <span>Start: {project.startDate && format(new Date(project.startDate), 'MMM d, yyyy')}</span>
+          <span>
+            Start:{" "}
+            {project.startDate &&
+              format(new Date(project.startDate), "MMM d, yyyy")}
+          </span>
         </div>
         <div>
-          <span>End: {project.endDate && format(new Date(project.endDate), 'MMM d, yyyy')}</span>
+          <span>
+            End:{" "}
+            {project.endDate &&
+              format(new Date(project.endDate), "MMM d, yyyy")}
+          </span>
         </div>
       </div>
 
       <div className="mt-4">
         <div className="flex justify-between items-center mb-2">
-          <h4 className="text-sm font-medium text-gray-900">Tasks ({project.tasks?.length})</h4>
+          <h4 className="text-sm font-medium text-gray-900">
+            Tasks ({project.tasks?.length})
+          </h4>
           <button
             onClick={() => onAddTask(project.id)}
             className="px-2 py-1 text-sm bg-primary-600 text-white rounded hover:bg-primary-700"
@@ -152,7 +203,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
         <div className="space-y-2 max-h-48 overflow-y-auto">
           {project.tasks?.map((task: Task) => (
-            <ProjectTask 
+            <ProjectTask
+              key={task.id}
               task={task}
               handleTaskStatusChange={handleTaskStatusChange}
               onRemoveTask={onRemoveTask}
@@ -164,4 +216,4 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   );
 };
 
-export default memo(ProjectCard); 
+export default memo(ProjectCard);
