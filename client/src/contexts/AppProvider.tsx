@@ -5,6 +5,8 @@ import { EventProvider } from "./EventContext";
 import { ProjectProvider } from "./ProjectContext";
 import { SettingsProvider } from "./SettingsContext";
 import { LoadingProvider } from "./LoadingContext";
+import { TimeTrackingProvider } from "./TimeTrackingContext";
+import { GoalProvider } from "./GoalContext";
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({
   children,
@@ -15,7 +17,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
         <SettingsProvider>
           <ProjectProvider>
             <TaskProvider>
-              <EventProvider>{children}</EventProvider>
+              <EventProvider>
+                <TimeTrackingProvider>
+                  <GoalProvider>{children}</GoalProvider>
+                </TimeTrackingProvider>
+              </EventProvider>
             </TaskProvider>
           </ProjectProvider>
         </SettingsProvider>

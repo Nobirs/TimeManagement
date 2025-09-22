@@ -1,158 +1,219 @@
-import { Request, Response } from 'express';
-import { getData, setData } from '../services/redis';
-import { Note } from '@time-management/shared-types';
+import { Request, Response } from "express";
+import prisma from "../services/prisma";
+import { Note } from "@time-management/shared-types";
+import { NoteCategory } from "@prisma/client";
+import { logger } from "../utils/logger";
 
 export const getNotes = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const notes = await getData('notes') || [];
+    const userId = _req.user?.userId;
+    const notes = await prisma.note.findMany({
+      where: { userId },
+    });
     res.json({ data: notes });
   } catch (error) {
-    console.error('Error fetching notes:', error);
-    res.status(500).json({ error: 'Failed to fetch notes' });
+    console.error("Error fetching notes:", error);
+    res.status(500).json({ error: "Failed to fetch notes" });
   }
 };
 
 export const getNote = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const notes = await getData('notes') || [];
-    const note = notes.find((n: Note) => n.id === id);
-    
+    const note = await prisma.note.findUnique({ where: { id } });
+
     if (!note) {
-      res.status(404).json({ error: 'Note not found' });
+      res.status(404).json({ error: "Note not found" });
+      return;
     }
-    
+
     res.json({ data: note });
   } catch (error) {
-    console.error('Error fetching note:', error);
-    res.status(500).json({ error: 'Failed to fetch note' });
+    console.error("Error fetching note:", error);
+    res.status(500).json({ error: "Failed to fetch note" });
   }
 };
 
-export const createNote = async (req: Request, res: Response): Promise<void> => {
+export const createNote = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'> = req.body;
-    
-    if (!note.title?.trim()) {
-      res.status(400).json({ error: 'Note title is required' });
+    const note: Omit<Note, "id" | "createdAt" | "updatedAt"> = req.body;
+    const userId = req.user?.userId;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
     }
 
-    const newNote: Note = {
-      ...note,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isPinned: note.isPinned || false,
-      tags: note.tags || []
-    };
+    if (!note.title?.trim()) {
+      res.status(400).json({ error: "Note title is required" });
+    }
 
-    const notes = await getData('notes') || [];
-    notes.push(newNote);
-    await setData('notes', notes);
-    
+    const newNote = await prisma.note.create({
+      data: {
+        ...note,
+        userId: userId,
+      },
+    });
+
     res.status(201).json({ data: newNote });
   } catch (error) {
-    console.error('Error creating note:', error);
-    res.status(500).json({ error: 'Failed to create note' });
+    console.error("Error creating note:", error);
+    res.status(500).json({ error: "Failed to create note" });
   }
 };
 
-export const updateNote = async (req: Request, res: Response): Promise<void> => {
+export const updateNote = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const updatedNote: Note = req.body;
-    
-    if (!updatedNote.title?.trim()) {
-      res.status(400).json({ error: 'Note title is required' });
+    let note: Omit<Note, "id" | "createdAt" | "updatedAt"> = req.body;
+    const userId = req.user?.userId || "1";
+
+    if (!note.title?.trim()) {
+      res.status(400).json({ error: "Note title is required" });
     }
 
-    const notes = await getData('notes') || [];
-    const index = notes.findIndex((n: Note) => n.id === id);
-    
-    if (index === -1) {
-      res.status(404).json({ error: 'Note not found' });
-    }
-    
-    const noteToUpdate = {
-      ...updatedNote,
-      id,
-      updatedAt: new Date().toISOString(),
-      createdAt: notes[index].createdAt // preserve original creation date
-    };
-    
-    notes[index] = noteToUpdate;
-    await setData('notes', notes);
-    
-    res.json({ data: noteToUpdate });
+    const updatedNote = await prisma.note.update({
+      where: { id },
+      data: {
+        ...note,
+        userId,
+      },
+    });
+
+    res.json({ data: updatedNote });
   } catch (error) {
-    console.error('Error updating note:', error);
-    res.status(500).json({ error: 'Failed to update note' });
+    logger.error("Error updating note:", error);
+    res.status(500).json({ error: "Failed to update note" });
   }
 };
 
-export const deleteNote = async (req: Request, res: Response): Promise<void> => {
+export const deleteNote = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const notes = await getData('notes') || [];
-    const filteredNotes = notes.filter((n: Note) => n.id !== id);
-    
-    if (notes.length === filteredNotes.length) {
-      res.status(404).json({ error: 'Note not found' });
+    const note = prisma.note.delete({ where: { id } });
+
+    if (!note) {
+      res.status(404).json({ error: "Note not found" });
     }
-    
-    await setData('notes', filteredNotes);
+
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting note:', error);
-    res.status(500).json({ error: 'Failed to delete note' });
+    console.error("Error deleting note:", error);
+    res.status(500).json({ error: "Failed to delete note" });
   }
 };
 
-export const getNotesByCategory = async (req: Request, res: Response): Promise<void> => {
+export const getNotesByCategory = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { category } = req.params;
-    const notes = await getData('notes') || [];
-    const filteredNotes = notes.filter((n: Note) => n.category === category);
-    
+    const userId = req.user?.userId;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const filteredNotes = await prisma.note.findMany({
+      where: {
+        userId: userId,
+        category: NoteCategory[category as keyof typeof NoteCategory],
+      },
+    });
+
     res.json({ data: filteredNotes });
   } catch (error) {
-    console.error('Error fetching notes by category:', error);
-    res.status(500).json({ error: 'Failed to fetch notes by category' });
+    console.error("Error fetching notes by category:", error);
+    res.status(500).json({ error: "Failed to fetch notes by category" });
   }
 };
 
-export const getNotesByTag = async (req: Request, res: Response): Promise<void> => {
+export const getNotesByTag = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { tag } = req.params;
-    const notes = await getData('notes') || [];
-    const filteredNotes = notes.filter((n: Note) => n.tags.includes(tag));
-    
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const filteredNotes = await prisma.note.findMany({
+      where: { userId: userId, tags: { has: tag } },
+    });
+
     res.json({ data: filteredNotes });
   } catch (error) {
-    console.error('Error fetching notes by tag:', error);
-    res.status(500).json({ error: 'Failed to fetch notes by tag' });
+    console.error("Error fetching notes by tag:", error);
+    res.status(500).json({ error: "Failed to fetch notes by tag" });
   }
 };
 
-export const getPinnedNotes = async (_req: Request, res: Response): Promise<void> => {
+export const getPinnedNotes = async (
+  _req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const notes = await getData('notes') || [];
-    const pinnedNotes = notes.filter((n: Note) => n.isPinned);
-    
+    const userId = _req.user?.userId || "1";
+    const pinnedNotes = await prisma.note.findMany({
+      where: { userId, isPinned: true },
+    });
+
     res.json({ data: pinnedNotes });
   } catch (error) {
-    console.error('Error fetching pinned notes:', error);
-    res.status(500).json({ error: 'Failed to fetch pinned notes' });
+    console.error("Error fetching pinned notes:", error);
+    res.status(500).json({ error: "Failed to fetch pinned notes" });
   }
 };
 
 export const syncNotes = async (req: Request, res: Response): Promise<void> => {
   try {
     const { data: notes } = req.body;
-    await setData('notes', notes);
+    const userId = req.user?.userId;
+
+    await prisma.$transaction(async (prisma) => {
+      const existingNotes = await prisma.note.findMany({
+        where: { userId },
+        select: { id: true },
+      });
+
+      const newNoteIds = notes.map((n: Note) => n.id);
+      await prisma.note.deleteMany({
+        where: {
+          userId,
+          NOT: { id: { in: newNoteIds } },
+        },
+      });
+
+      for (const note of notes) {
+        await prisma.note.upsert({
+          where: { id: note.id },
+          update: {
+            ...note,
+            updatedAt: new Date(),
+          },
+          create: {
+            ...note,
+            createdAt: new Date(note.createdAt || Date.now()),
+            updatedAt: new Date(note.updatedAt || Date.now()),
+          },
+        });
+      }
+    });
+
     res.json({ success: true });
   } catch (error) {
-    console.error('Error syncing notes:', error);
-    res.status(500).json({ error: 'Failed to sync notes' });
+    logger.error("Error syncing notes:", error);
+    res.status(500).json({ error: "Failed to sync notes" });
   }
 };

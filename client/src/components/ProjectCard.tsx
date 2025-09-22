@@ -61,11 +61,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
       if (!task) return;
 
       const newStatus: TaskStatus =
-        task.status === TaskStatus.TODO
-          ? TaskStatus.InProgress
-          : task.status === TaskStatus.InProgress
-          ? TaskStatus.Completed
-          : TaskStatus.TODO;
+        task.status === TaskStatus.todo
+          ? TaskStatus.in_progress
+          : task.status === TaskStatus.in_progress
+          ? TaskStatus.completed
+          : TaskStatus.todo;
 
       try {
         await updateTask(taskId, {
@@ -79,6 +79,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     },
     [project, project.tasks, updateTask]
   );
+
+  console.log("In projectCard element");
+  console.log(project);
+  console.log(project.tasks);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">

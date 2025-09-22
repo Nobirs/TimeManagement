@@ -32,7 +32,7 @@ export const ProjectTask = ({
           className={`w-4 h-4 rounded-full border-2 ${
             task.status === "completed"
               ? "bg-green-500 border-transparent"
-              : task.status === "in-progress"
+              : task.status === "in_progress"
               ? "bg-blue-500 border-transparent"
               : "bg-white border-gray-300"
           }`}
@@ -46,7 +46,7 @@ export const ProjectTask = ({
           className={`px-2 py-0.5 text-xs rounded-full ${
             task.status === "completed"
               ? "bg-green-100 text-green-800"
-              : task.status === "in-progress"
+              : task.status === "in_progress"
               ? "bg-yellow-100 text-yellow-800"
               : "bg-gray-100 text-gray-800"
           }`}

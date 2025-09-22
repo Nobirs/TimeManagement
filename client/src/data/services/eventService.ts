@@ -1,9 +1,9 @@
-import type { Event } from '@time-management/shared-types';
-import { apiClient } from '../api/client';
-import { storageService } from './storageService';
+import type { Event } from "@time-management/shared-types";
+import { apiClient } from "../api/client";
+import { storageService } from "./storageService";
 
 class EventService {
-  private readonly STORAGE_KEY = 'events';
+  private readonly STORAGE_KEY = "events";
 
   private generateId(): string {
     return Math.random().toString(36).substr(2, 9);
@@ -11,36 +11,38 @@ class EventService {
 
   private async syncWithServer(events: Event[]): Promise<void> {
     try {
-      await apiClient.post('/sync/events', { data: events });
+      await apiClient.post<Event>("/sync/events", { data: events });
     } catch (error) {
-      console.error('Failed to sync events with server:', error);
+      console.error("Failed to sync events with server:", error);
     }
   }
 
   async getAll(): Promise<Event[]> {
     try {
-      const response = await apiClient.get<Event[]>('/events');
+      const response = await apiClient.get<Event[]>("/events");
       if (response.data) {
         storageService.set(this.STORAGE_KEY, response.data);
         return response.data;
       }
       return storageService.get<Event[]>(this.STORAGE_KEY) || [];
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error("Error fetching events:", error);
       return storageService.get<Event[]>(this.STORAGE_KEY) || [];
     }
   }
 
-  async create(event: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>): Promise<Event> {
+  async create(
+    event: Omit<Event, "id" | "createdAt" | "updatedAt">
+  ): Promise<Event> {
     const newEvent: Event = {
       ...event,
       id: this.generateId(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     try {
-      const response = await apiClient.post<Event>('/events', newEvent);
+      const response = await apiClient.post<Event>("/events", newEvent);
       if (response.data) {
         const events = await this.getAll();
         const updatedEvents = [...events, response.data];
@@ -48,9 +50,9 @@ class EventService {
         await this.syncWithServer(updatedEvents);
         return response.data;
       }
-      throw new Error('Failed to create event');
+      throw new Error("Failed to create event");
     } catch (error) {
-      console.error('Error creating event:', error);
+      console.error("Error creating event:", error);
       const events = await this.getAll();
       const updatedEvents = [...events, newEvent];
       storageService.set(this.STORAGE_KEY, updatedEvents);
@@ -61,29 +63,34 @@ class EventService {
 
   async update(id: string, event: Partial<Event>): Promise<Event> {
     const events = await this.getAll();
-    const existingEvent = events.find(e => e.id === id);
+    const existingEvent = events.find((e) => e.id === id);
     if (!existingEvent) {
-      throw new Error('Event not found');
+      throw new Error("Event not found");
     }
 
     const updatedEvent = {
       ...existingEvent,
       ...event,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
     try {
-      const response = await apiClient.put<Event>(`/events/${id}`, updatedEvent);
+      const response = await apiClient.put<Event>(
+        `/events/${id}`,
+        updatedEvent
+      );
       if (response.data) {
-        const updatedEvents = events.map(e => e.id === id ? response.data as Event : e);
+        const updatedEvents = events.map((e) =>
+          e.id === id ? (response.data as Event) : e
+        );
         storageService.set(this.STORAGE_KEY, updatedEvents);
         await this.syncWithServer(updatedEvents);
         return response.data;
       }
-      throw new Error('Failed to update event');
+      throw new Error("Failed to update event");
     } catch (error) {
-      console.error('Error updating event:', error);
-      const updatedEvents = events.map(e => e.id === id ? updatedEvent : e);
+      console.error("Error updating event:", error);
+      const updatedEvents = events.map((e) => (e.id === id ? updatedEvent : e));
       storageService.set(this.STORAGE_KEY, updatedEvents);
       await this.syncWithServer(updatedEvents);
       return updatedEvent;
@@ -95,20 +102,20 @@ class EventService {
       const response = await apiClient.delete(`/events/${id}`);
       if (response.status === 200) {
         const events = await this.getAll();
-        const updatedEvents = events.filter(e => e.id !== id);
+        const updatedEvents = events.filter((e) => e.id !== id);
         storageService.set(this.STORAGE_KEY, updatedEvents);
         await this.syncWithServer(updatedEvents);
       } else {
-        throw new Error('Failed to delete event');
+        throw new Error("Failed to delete event");
       }
     } catch (error) {
-      console.error('Error deleting event:', error);
+      console.error("Error deleting event:", error);
       const events = await this.getAll();
-      const updatedEvents = events.filter(e => e.id !== id);
+      const updatedEvents = events.filter((e) => e.id !== id);
       storageService.set(this.STORAGE_KEY, updatedEvents);
       await this.syncWithServer(updatedEvents);
     }
   }
 }
 
-export const eventService = new EventService(); 
+export const eventService = new EventService();

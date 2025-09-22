@@ -14,9 +14,15 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 import { useLoading } from "../contexts/LoadingContext";
 
 const Projects: React.FC = () => {
-  const { projects, loadProjects, updateProject, deleteProject } = useProject();
+  const {
+    projects,
+    loadProjects,
+    updateProject,
+    deleteProject,
+    removeTaskFromProject,
+  } = useProject();
 
-  const { tasks: allTasks, addTask: addGlobalTask } = useTask();
+  const { tasks: allTasks, addTask: addGlobalTask, updateTask } = useTask();
 
   const { isGlobalLoading: appLoading } = useLoading();
 
@@ -69,6 +75,13 @@ const Projects: React.FC = () => {
     if (!window.confirm("Are you sure you want to delete this project?"))
       return;
     try {
+      const projectTasks = allTasks.filter((t) => t.projectId === projectId);
+      await Promise.all(
+        projectTasks.map((task) =>
+          updateTask(task.id, { ...task, projectId: undefined })
+        )
+      );
+
       await deleteProject(projectId);
     } catch (err) {
       console.error("Error deleting project:", err);
@@ -87,14 +100,22 @@ const Projects: React.FC = () => {
       const project = projects.find((p) => p.id === selectedProjectId);
       if (!project) return;
 
+      const updatedTask: Task = {
+        ...task,
+        projectId: selectedProjectId,
+        updatedAt: new Date().toISOString(),
+      };
       const updatedProject: Project = {
         ...project,
-        tasks: [...(project.tasks || []), task],
+        tasks: [...(project.tasks || []), updatedTask],
         updatedAt: new Date().toISOString(),
       };
 
-      // Использовать updateProject из контекста
+      console.log(updatedProject);
+
+      await updateTask(updatedTask.id, updatedTask);
       await updateProject(updatedProject);
+
       setShowTaskModal(false);
       setSelectedProjectId(null);
     } catch (err) {
@@ -117,7 +138,7 @@ const Projects: React.FC = () => {
       description: "",
       dueDate: new Date().toISOString().split("T")[0],
       priority: Priority.Medium,
-      status: TaskStatus.TODO,
+      status: TaskStatus.todo,
     };
 
     try {
@@ -145,13 +166,7 @@ const Projects: React.FC = () => {
       const project = projects.find((p) => p.id === projectId);
       if (!project) return;
 
-      const updatedProject = {
-        ...project,
-        tasks: project.tasks?.filter((t) => t.id !== taskId),
-        updatedAt: new Date().toISOString(),
-      };
-
-      await updateProject(updatedProject);
+      await removeTaskFromProject(taskId, projectId);
     } catch (err) {
       console.error("Error removing task:", err);
     }
@@ -176,6 +191,9 @@ const Projects: React.FC = () => {
     );
   }
 
+  console.log("In projects.tsx");
+  console.log(projects);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
@@ -187,12 +205,6 @@ const Projects: React.FC = () => {
           <PlusIcon className="w-6 h-6 text-primary-600" />
         </button>
       </div>
-
-      {/*{error && (*/}
-      {/*  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">*/}
-      {/*    <p className="text-red-600">{error}</p>*/}
-      {/*  </div>*/}
-      {/*)}*/}
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -231,9 +243,9 @@ const Projects: React.FC = () => {
       )}
 
       {editingProject && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
-            <h2 className="text-2xl font-bold mb-4">Edit Project</h2>
+            <h2 className="text-2xl font-bold">Edit Project</h2>
             <ProjectForm
               project={editingProject}
               onSubmit={handleUpdateProject}
@@ -287,7 +299,7 @@ const Projects: React.FC = () => {
                         className={`px-2 py-1 text-xs rounded-full ${
                           task.status === "completed"
                             ? "bg-green-100 text-green-800"
-                            : task.status === "in-progress"
+                            : task.status === "in_progress"
                             ? "bg-yellow-100 text-yellow-800"
                             : "bg-gray-100 text-gray-800"
                         }`}

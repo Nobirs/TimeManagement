@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { format, isToday, parseISO } from "date-fns";
 
 import { useTask } from "../contexts/TaskContext";
@@ -70,7 +70,7 @@ const Dashboard: React.FC = () => {
       ),
       tasksByStatus: {
         todo: tasksArray.filter((task) => task.status === "todo").length,
-        inProgress: tasksArray.filter((task) => task.status === "in-progress")
+        inProgress: tasksArray.filter((task) => task.status === "in_progress")
           .length,
         completed: tasksArray.filter((task) => task.status === "completed")
           .length,
@@ -97,14 +97,14 @@ const Dashboard: React.FC = () => {
     if (!task) return;
 
     const newStatus =
-      currentStatus === TaskStatus.TODO
-        ? TaskStatus.InProgress
-        : currentStatus === TaskStatus.InProgress
-        ? TaskStatus.Completed
-        : TaskStatus.TODO;
+      currentStatus === TaskStatus.todo
+        ? TaskStatus.in_progress
+        : currentStatus === TaskStatus.in_progress
+        ? TaskStatus.completed
+        : TaskStatus.todo;
 
     try {
-      // Использовать updateTask из контекста
+      console.log(newStatus);
       await updateTask(taskId, {
         ...task,
         status: newStatus,

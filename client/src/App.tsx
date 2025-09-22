@@ -1,27 +1,50 @@
-import { AppProvider } from './contexts/AppProvider';
-import { useAuth } from './contexts/AuthContext';
-import Login from './pages/Auth/Login';
-import Register from './pages/Auth/Register';
-import Dashboard from './pages/Dashboard';
-import Calendar from './pages/Calendar';
-import Tasks from './pages/Tasks';
-import Projects from './pages/Projects';
-import Notes from './pages/Notes';
+import { AppProvider } from "./contexts/AppProvider";
+import { useAuth } from "./contexts/AuthContext";
+import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
+import Dashboard from "./pages/Dashboard";
+import Calendar from "./pages/Calendar/Calendar";
+import Tasks from "./pages/Tasks";
+import Projects from "./pages/Projects";
+import Notes from "./pages/Notes";
 import TimeTracker from "./pages/TimeTracker";
 import Goals from "./pages/Goals";
 import Habits from "./pages/Habits";
 import PomodoroTimer from "./pages/PomodoroTimer";
 import RoadmapPage from "./pages/RoadmapPage";
-import Layout from './components/Layout/Layout';
-import { createBrowserRouter, RouterProvider, Outlet, useLocation, Navigate } from 'react-router-dom';
+import Layout from "./components/Layout/Layout";
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Outlet,
+  useLocation,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
+import Nutrition from "./pages/Nutrition";
+import { useEffect } from "react";
+import { logger } from "./utils/logger";
 
 const AuthCheck = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // if (!isAuthenticated && location.pathname !== '/login' && location.pathname !== '/register') {
-  //   return <Navigate to="/login" state={{ from: location }} replace />;
-  // }
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || "/";
+      logger.info(`Redirecting to ${from}`);
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated]);
+
+  if (
+    !isAuthenticated &&
+    location.pathname !== "/login" &&
+    location.pathname !== "/register"
+  ) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   return <Outlet />;
 };
@@ -51,19 +74,20 @@ const router = createBrowserRouter([
           { path: "habits", element: <Habits /> },
           { path: "pomodoro", element: <PomodoroTimer /> },
           { path: "roadmap", element: <RoadmapPage /> },
-        ]
+          { path: "nutrition", element: <Nutrition /> },
+        ],
       },
       { path: "login", element: <Login /> },
       { path: "register", element: <Register /> },
-    ]
-  }
+    ],
+  },
 ]);
 
 const App = () => {
   return (
-      <AppProvider>
-        <RouterProvider router={router} />
-      </AppProvider>
+    <AppProvider>
+      <RouterProvider router={router} />
+    </AppProvider>
   );
 };
 

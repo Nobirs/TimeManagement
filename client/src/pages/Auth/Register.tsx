@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useApp } from '../../contexts/AppContext';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 const Register = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const { register, error: contextError } = useApp();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await register(name, email, password);
-      navigate('/');
+      navigate("/");
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || "Registration failed");
     }
   };
 
@@ -36,7 +36,10 @@ const Register = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Full Name
               </label>
               <input
@@ -51,7 +54,10 @@ const Register = () => {
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <input
@@ -66,7 +72,10 @@ const Register = () => {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <input
@@ -93,7 +102,10 @@ const Register = () => {
         </form>
         <div className="text-sm text-center">
           <span className="text-gray-600">Already have an account? </span>
-          <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
+          <Link
+            to="/login"
+            className="font-medium text-primary-600 hover:text-primary-500"
+          >
             Sign in
           </Link>
         </div>

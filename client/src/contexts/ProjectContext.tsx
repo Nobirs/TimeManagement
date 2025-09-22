@@ -6,16 +6,21 @@ import {
   type ReactNode,
   useCallback,
 } from "react";
-import type { Project, Task } from "@time-management/shared-types";
+import type { Project } from "@time-management/shared-types";
 import { projectService } from "../data/services/projectService";
-import { taskService } from "../data/services/taskService";
+import { useAuth } from "./AuthContext";
+import { logger } from "../utils/logger";
+import { useTask } from "./TaskContext";
 
 interface ProjectContextType {
   projects: Project[];
   loadProjects: () => Promise<void>;
   updateProject: (project: Project) => Promise<Project | null>;
   deleteProject: (projectId: string) => Promise<void>;
-  assignTaskToProject: (taskId: string, projectId: string | undefined) => void;
+  removeTaskFromProject: (
+    taskId: string,
+    projectId: string
+  ) => Promise<Project>;
   isSyncing: boolean;
   error: string | null;
 }
@@ -28,15 +33,18 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({
   const [projects, setProjects] = useState<Project[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const loadProjects = useCallback(async () => {
     try {
       const loadedProjects = await projectService.getAll();
       setProjects(Array.isArray(loadedProjects) ? loadedProjects : []);
+      logger.info("Loaded projects", loadedProjects);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load Projects");
+      logger.error("Failed to load Projects", err);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadProjects();
@@ -70,33 +78,40 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const removeTaskFromProject = async (taskId: string, projectId: string) => {
+    try {
+      setIsSyncing(true);
+      const updatedProject = await projectService.removeTask(projectId, taskId);
+      logger.debug("Updated project after removing task:", updatedProject);
+      if (updatedProject) {
+        setProjects((prev) =>
+          prev.map((p) => (p.id === projectId ? updatedProject : p))
+        );
+        triggerSync();
+        return updatedProject;
+      }
+      throw new Error("Failed to remove task from project");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove task");
+      throw err;
+    }
+  };
+
   const deleteProject = async (projectId: string) => {
     try {
       setIsSyncing(true);
 
-      // Снимаем привязку у задач (можно улучшить, если задачи хранятся в TaskContext)
-      const tasks = await taskService.getAll();
-      tasks.forEach(async (t) => {
-        if (t.projectId === projectId) {
-          await taskService.update(t.id, { ...t, projectId: undefined });
-        }
-      });
-
       await projectService.delete(projectId);
+
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
+
       triggerSync();
     } catch (err) {
-      console.error("Error deleting project:", err);
+      logger.error("Error deleting project:", err);
+      throw err;
     } finally {
       setIsSyncing(false);
     }
-  };
-
-  const assignTaskToProject = (
-    taskId: string,
-    projectId: string | undefined
-  ) => {
-    // Заглушка для логики привязки задач (если нужно напрямую управлять из этого контекста)
   };
 
   const value = {
@@ -104,7 +119,7 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({
     loadProjects,
     updateProject,
     deleteProject,
-    assignTaskToProject,
+    removeTaskFromProject,
     isSyncing,
     error,
   };

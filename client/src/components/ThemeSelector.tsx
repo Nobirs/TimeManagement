@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import Icon from "./Icon";
 import { useSettings } from "../contexts/SettingsContext.tsx";
+import { useAuth } from "../contexts/AuthContext.tsx";
 
 interface ThemeSelectorProps {
   onClose?: () => void;
@@ -71,7 +72,7 @@ const predefinedThemes = {
 
 const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onClose }) => {
   const { theme, setTheme, setCustomTheme } = useSettings();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { logout } = useAuth();
 
   const applyTheme = (
     selectedTheme: string,
@@ -104,24 +105,9 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onClose }) => {
     onClose?.();
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const css = e.target?.result as string;
-          const style = document.createElement("style");
-          style.textContent = css;
-          document.head.appendChild(style);
-          setTheme("custom");
-          onClose?.();
-        } catch (error) {
-          console.error("Error loading custom theme:", error);
-        }
-      };
-      reader.readAsText(file);
-    }
+  const handleLogout = () => {
+    logout();
+    onClose?.();
   };
 
   return (
@@ -133,24 +119,11 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onClose }) => {
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 bg-white"
         >
           {Object.keys(predefinedThemes).map((themeName) => (
-            <option value={themeName}>
+            <option key={themeName} value={themeName}>
               {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
             </option>
           ))}
         </select>
-        {/*<button*/}
-        {/*  onClick={() => fileInputRef.current?.click()}*/}
-        {/*  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"*/}
-        {/*>*/}
-        {/*  Upload Custom Theme*/}
-        {/*</button>*/}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".css"
-          className="hidden"
-          onChange={handleFileUpload}
-        />
       </div>
       <div className="grid grid-cols-2 gap-3">
         {Object.entries(predefinedThemes).map(([themeName, colors]) => (
@@ -192,6 +165,27 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({ onClose }) => {
           </div>
         ))}
       </div>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="w-full mt-4 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+      >
+        <div className="flex items-center justify-center space-x-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>Logout</span>
+        </div>
+      </button>
     </div>
   );
 };

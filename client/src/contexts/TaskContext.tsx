@@ -9,6 +9,8 @@ import type { Task } from "@time-management/shared-types";
 import { taskService } from "../data/services/taskService";
 import { projectService } from "../data/services/projectService";
 import { useProject } from "./ProjectContext";
+import { useAuth } from "./AuthContext";
+import { logger } from "../utils/logger";
 
 interface TaskContextType {
   tasks: Task[];
@@ -32,15 +34,23 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { updateProject } = useProject();
+  const { user } = useAuth();
 
   const loadTasks = useCallback(async () => {
     try {
       const loadedTasks = await taskService.getAll();
+      console.log(loadedTasks);
       setTasks(Array.isArray(loadedTasks) ? loadedTasks : []);
+      logger.info("Loaded tasks", loadedTasks);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load tasks");
+      logger.error("Failed to load tasks", err);
     }
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
 
   const triggerSync = useCallback(() => {
     localStorage.setItem("sync-projects", Date.now().toString());

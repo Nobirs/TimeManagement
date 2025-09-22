@@ -90,7 +90,7 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-3x1 mx-auto p-6">
+    <form onSubmit={handleSubmit} className="space-y-2 max-w-3x1 mx-auto p-3">
       <div>
         <label
           htmlFor="title"
@@ -224,9 +224,9 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Progress and Color Picker - левая колонка */}
-        <div className="space-y-6">
+        <div className="space-y-2">
           {/* Progress Slider */}
           <div>
             <label
@@ -281,78 +281,75 @@ const ProjectForm: React.FC<ProjectFormProps> = ({
           </div>
         </div>
 
-        <div className="flex">
-          {/* Tags and Members - правая колонка */}
-          <div className="space-y-6">
-            {/* Tags */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags
-              </label>
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap gap-2">
-                  {formData.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center pl-3 pr-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+        <div className="flex flex-row justify-between space-2">
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tags
+            </label>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center pl-3 pr-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-1.5 text-gray-500 hover:text-gray-700 focus:outline-none"
                     >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => removeTag(tag)}
-                        className="ml-1.5 text-gray-500 hover:text-gray-700 focus:outline-none"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  placeholder="Add a tag and press Enter"
-                  onKeyDown={handleTagInput}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
+                      ×
+                    </button>
+                  </span>
+                ))}
               </div>
+              <input
+                type="text"
+                placeholder="Add a tag and press Enter"
+                onKeyDown={handleTagInput}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
             </div>
+          </div>
 
-            {/* Team Members */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Team Members
-              </label>
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-wrap gap-2">
-                  {formData.members.map((member) => (
-                    <span
-                      key={member}
-                      className="inline-flex items-center pl-3 pr-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+          {/* Team Members */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Team Members
+            </label>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
+                {formData.members.map((member) => (
+                  <span
+                    key={member}
+                    className="inline-flex items-center pl-3 pr-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                  >
+                    {member}
+                    <button
+                      type="button"
+                      onClick={() => removeMember(member)}
+                      className="ml-1.5 text-gray-500 hover:text-gray-700 focus:outline-none"
                     >
-                      {member}
-                      <button
-                        type="button"
-                        onClick={() => removeMember(member)}
-                        className="ml-1.5 text-gray-500 hover:text-gray-700 focus:outline-none"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  placeholder="Add a member and press Enter"
-                  onKeyDown={handleMemberInput}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
+                      ×
+                    </button>
+                  </span>
+                ))}
               </div>
+              <input
+                type="text"
+                placeholder="Add a member and press Enter"
+                onKeyDown={handleMemberInput}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
             </div>
           </div>
         </div>
       </div>
 
       {/* Buttons - под всеми колонками */}
-      <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
         <button
           type="button"
           onClick={onCancel}

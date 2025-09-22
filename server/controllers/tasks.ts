@@ -1,110 +1,132 @@
-import { Request, Response } from 'express';
-import { getData, setData } from '../services/redis';
-import { Task } from '@time-management/shared-types';
+import { Request, Response } from "express";
+import prisma from "../services/prisma";
+import { Priority, Task, TaskStatus } from "@time-management/shared-types";
+import { parseTaskStatus } from "../utils/parseEnums";
+import { logger } from "../utils/logger";
 
 export const getTasks = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const tasks = await getData('tasks') || [];
+    const userId = _req.user?.userId;
+    logger.info(`Fetching tasks for user ${userId}`);
+
+    const tasks = await prisma.task.findMany({
+      where: { userId },
+    });
+    logger.info(`Fetching tasks for user ${userId}`);
     res.json({ data: tasks });
   } catch (error) {
-    console.error('Error fetching tasks:', error);
-    res.status(500).json({ error: 'Failed to fetch tasks' });
+    console.error("Error fetching tasks:", error);
+    res.status(500).json({ error: "Failed to fetch tasks" });
   }
 };
 
 export const getTask = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const tasks = await getData('tasks') || [];
-    const task = tasks.find((t: Task) => t.id === id);
-    
+    const task = await prisma.task.findUnique({
+      where: { id },
+    });
+
     if (!task) {
-      res.status(404).json({ error: 'Task not found' });
+      res.status(404).json({ error: "Task not found" });
     }
-    
+
     res.json({ data: task });
   } catch (error) {
-    console.error('Error fetching task:', error);
-    res.status(500).json({ error: 'Failed to fetch task' });
+    console.error("Error fetching task:", error);
+    res.status(500).json({ error: "Failed to fetch task" });
   }
 };
 
-export const createTask = async (req: Request, res: Response): Promise<void> => {
+export const createTask = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const task: Task = req.body;
-    
-    if (!task.title?.trim()) {
-      res.status(400).json({ error: 'Task title is required' });
+    const { title, description, status, priority, dueDate, projectId } =
+      req.body;
+
+    if (!title?.trim()) {
+      res.status(400).json({ error: "Task title is required" });
+      return;
     }
 
-    const newTask: Task = {
-      ...task,
-      id: task.id || crypto.randomUUID(),
-      createdAt: task.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: task.status || 'todo',
-      priority: task.priority || 'medium'
-    };
+    const userId = req.user?.userId || "1";
 
-    const tasks = await getData('tasks') || [];
-    tasks.push(newTask);
-    await setData('tasks', tasks);
-    
+    const newTask = await prisma.task.create({
+      data: {
+        title,
+        description,
+        status: status || TaskStatus.todo,
+        priority: priority || Priority.Medium,
+        dueDate: new Date(dueDate),
+        user: { connect: { id: userId } },
+        ...(projectId && { project: { connect: { id: projectId } } }),
+      },
+    });
+
     res.status(201).json({ data: newTask });
   } catch (error) {
-    console.error('Error creating task:', error);
-    res.status(500).json({ error: 'Failed to create task' });
+    console.error("Error creating task:", error);
+    res.status(500).json({ error: "Failed to create task" });
   }
 };
 
-export const updateTask = async (req: Request, res: Response): Promise<void> => {
+export const updateTask = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const updatedTask: Task = req.body;
-    
-    if (!updatedTask.title?.trim()) {
-      res.status(400).json({ error: 'Task title is required' });
+    const { title, description, status, priority, dueDate, projectId } =
+      req.body;
+
+    if (!title?.trim()) {
+      res.status(400).json({ error: "Task title is required" });
+      return;
     }
 
-    const tasks = await getData('tasks') || [];
-    const index = tasks.findIndex((t: Task) => t.id === id);
-    
-    if (index === -1) {
-      res.status(404).json({ error: 'Task not found' });
-    }
-    
-    const originalTask = tasks[index];
-    const taskToUpdate = {
-      ...updatedTask,
-      id,
-      createdAt: originalTask.createdAt,
-      updatedAt: new Date().toISOString()
-    };
-    
-    tasks[index] = taskToUpdate;
-    await setData('tasks', tasks);
-    
-    res.json({ data: taskToUpdate });
+    const userId = req.user?.userId || "1";
+
+    const updatedTask = await prisma.task.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        status: parseTaskStatus(status),
+        priority: priority || undefined,
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        user: { connect: { id: userId } },
+        project: projectId
+          ? { connect: { id: projectId } }
+          : { disconnect: true },
+      },
+    });
+
+    res.json({ data: updatedTask });
   } catch (error) {
-    console.error('Error updating task:', error);
-    res.status(500).json({ error: 'Failed to update task' });
+    console.error("Error updating task:", error);
+    res.status(500).json({ error: "Failed to update task" });
   }
 };
 
-export const deleteTask = async (req: Request, res: Response): Promise<void> => {
+export const deleteTask = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const tasks = await getData('tasks') || [];
-    const filteredTasks = tasks.filter((t: Task) => t.id !== id);
-    
-    if (tasks.length === filteredTasks.length) {
-      res.status(404).json({ error: 'Task not found' });
+    const task = await prisma.task.findUnique({ where: { id } });
+
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+      return;
     }
-    
-    await setData('tasks', filteredTasks);
+
+    await prisma.task.delete({ where: { id } });
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting task:', error);
-    res.status(500).json({ error: 'Failed to delete task' });
+    console.error("Error deleting task:", error);
+    res.status(500).json({ error: "Failed to delete task" });
   }
 };

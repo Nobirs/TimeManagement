@@ -25,6 +25,7 @@ import {
 
 import { useEvent } from "../contexts/EventContext";
 import { useLoading } from "../contexts/LoadingContext";
+import { useAuth } from "../contexts/AuthContext";
 
 const Calendar: React.FC = () => {
   const { events, addEvent, updateEvent, deleteEvent, error } = useEvent();
@@ -32,6 +33,7 @@ const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const { user } = useAuth();
   const [newEvent, setNewEvent] = useState<
     Omit<Event, "id" | "createdAt" | "updatedAt">
   >({
@@ -39,7 +41,7 @@ const Calendar: React.FC = () => {
     date: format(new Date(), "yyyy-MM-dd"),
     time: "09:00",
     type: "meeting",
-    userId: "1",
+    userId: user?.id || "1",
   });
 
   const calendarDays = useMemo(() => {
@@ -59,7 +61,7 @@ const Calendar: React.FC = () => {
         const eventDate =
           event.date instanceof Date
             ? format(event.date, "yyyy-MM-dd")
-            : event.date.split("T")[0]; // Если это строка в формате ISO
+            : event.date.split("T")[0];
         return eventDate === targetDate;
       })
       .sort((a, b) => (a.time ?? "").localeCompare(b.time ?? ""));
@@ -177,7 +179,7 @@ const Calendar: React.FC = () => {
       date: event.date,
       time: event.time,
       type: event.type,
-      userId: "1",
+      userId: user?.id || "1",
     });
     setShowAddEvent(true);
   };
@@ -210,7 +212,7 @@ const Calendar: React.FC = () => {
       date: format(date, "yyyy-MM-dd"),
       time: "09:00",
       type: "meeting",
-      userId: "1",
+      userId: user?.id || "1",
     });
     setShowAddEvent(true);
   };

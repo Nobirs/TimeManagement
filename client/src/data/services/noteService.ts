@@ -1,9 +1,10 @@
-import type { Note } from '@time-management/shared-types';
-import { apiClient } from '../api/client';
-import { storageService } from './storageService';
+import type { Note } from "@time-management/shared-types";
+import { apiClient } from "../api/client";
+import { storageService } from "./storageService";
+import { logger } from "../../utils/logger";
 
 class NoteService {
-  private readonly STORAGE_KEY = 'notes';
+  private readonly STORAGE_KEY = "notes";
 
   private generateId(): string {
     return Math.random().toString(36).substr(2, 9);
@@ -11,22 +12,22 @@ class NoteService {
 
   private async syncWithServer(notes: Note[]): Promise<void> {
     try {
-      await apiClient.post('/sync/notes', { data: notes });
+      await apiClient.post("/sync/notes", { data: notes });
     } catch (error) {
-      console.error('Failed to sync notes with server:', error);
+      logger.error("Failed to sync notes with server:", error);
     }
   }
 
   async getAll(): Promise<Note[]> {
     try {
-      const response = await apiClient.get<Note[]>('/notes');
+      const response = await apiClient.get<Note[]>("/notes");
       if (response.data) {
         storageService.set(this.STORAGE_KEY, response.data);
         return response.data;
       }
       return storageService.get<Note[]>(this.STORAGE_KEY) || [];
     } catch (error) {
-      console.error('Error fetching notes:', error);
+      console.error("Error fetching notes:", error);
       return storageService.get<Note[]>(this.STORAGE_KEY) || [];
     }
   }
@@ -36,13 +37,15 @@ class NoteService {
       const response = await apiClient.get<Note>(`/notes/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching note:', error);
+      console.error("Error fetching note:", error);
       const notes = await this.getAll();
-      return notes.find(note => note.id === id) || null;
+      return notes.find((note) => note.id === id) || null;
     }
   }
 
-  async create(note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>): Promise<Note> {
+  async create(
+    note: Omit<Note, "id" | "createdAt" | "updatedAt">
+  ): Promise<Note> {
     const newNote: Note = {
       ...note,
       id: this.generateId(),
@@ -51,7 +54,7 @@ class NoteService {
     };
 
     try {
-      const response = await apiClient.post<Note>('/notes', newNote);
+      const response = await apiClient.post<Note>("/notes", newNote);
       if (response.data) {
         const notes = await this.getAll();
         const updatedNotes = [...notes, response.data];
@@ -59,9 +62,9 @@ class NoteService {
         await this.syncWithServer(updatedNotes);
         return response.data;
       }
-      throw new Error('Failed to create note');
+      throw new Error("Failed to create note");
     } catch (error) {
-      console.error('Error creating note:', error);
+      console.error("Error creating note:", error);
       const notes = await this.getAll();
       const updatedNotes = [...notes, newNote];
       storageService.set(this.STORAGE_KEY, updatedNotes);
@@ -77,19 +80,26 @@ class NoteService {
     };
 
     try {
-      const response = await apiClient.put<Note>(`/notes/${note.id}`, updatedNote);
+      const response = await apiClient.put<Note>(
+        `/notes/${note.id}`,
+        updatedNote
+      );
       if (response.data) {
         const notes = await this.getAll();
-        const updatedNotes = notes.map(n => (n.id === updatedNote.id ? response.data as Note : n));
+        const updatedNotes = notes.map((n) =>
+          n.id === updatedNote.id ? (response.data as Note) : n
+        );
         storageService.set(this.STORAGE_KEY, updatedNotes);
         await this.syncWithServer(updatedNotes);
         return response.data;
       }
-      throw new Error('Failed to update note');
+      throw new Error("Failed to update note");
     } catch (error) {
-      console.error('Error updating note:', error);
+      console.error("Error updating note:", error);
       const notes = await this.getAll();
-      const updatedNotes = notes.map(n => (n.id === updatedNote.id ? updatedNote : n));
+      const updatedNotes = notes.map((n) =>
+        n.id === updatedNote.id ? updatedNote : n
+      );
       storageService.set(this.STORAGE_KEY, updatedNotes);
       await this.syncWithServer(updatedNotes);
       return updatedNote;
@@ -101,16 +111,16 @@ class NoteService {
       const response = await apiClient.delete(`/notes/${noteId}`);
       if (response.status === 200) {
         const notes = await this.getAll();
-        const updatedNotes = notes.filter(n => n.id !== noteId);
+        const updatedNotes = notes.filter((n) => n.id !== noteId);
         storageService.set(this.STORAGE_KEY, updatedNotes);
         await this.syncWithServer(updatedNotes);
       } else {
-        throw new Error('Failed to delete note');
+        throw new Error("Failed to delete note");
       }
     } catch (error) {
-      console.error('Error deleting note:', error);
+      console.error("Error deleting note:", error);
       const notes = await this.getAll();
-      const updatedNotes = notes.filter(n => n.id !== noteId);
+      const updatedNotes = notes.filter((n) => n.id !== noteId);
       storageService.set(this.STORAGE_KEY, updatedNotes);
       await this.syncWithServer(updatedNotes);
     }
@@ -118,18 +128,18 @@ class NoteService {
 
   async getByCategory(category: string): Promise<Note[]> {
     const notes = await this.getAll();
-    return notes.filter(note => note.category === category);
+    return notes.filter((note) => note.category === category);
   }
 
   async getByTag(tag: string): Promise<Note[]> {
     const notes = await this.getAll();
-    return notes.filter(note => note.tags.includes(tag));
+    return notes.filter((note) => note.tags.includes(tag));
   }
 
   async getPinned(): Promise<Note[]> {
     const notes = await this.getAll();
-    return notes.filter(note => note.isPinned);
+    return notes.filter((note) => note.isPinned);
   }
 }
 
-export const noteService = new NoteService(); 
+export const noteService = new NoteService();

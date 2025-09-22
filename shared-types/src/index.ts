@@ -21,9 +21,9 @@ export interface User extends BaseEntity {
 }
 
 export enum TaskStatus {
-  TODO="todo",
-  InProgress="in-progress",
-  Completed="completed"
+  todo = "todo",
+  in_progress = "in_progress",
+  completed = "completed",
 }
 
 export interface Task extends BaseEntity {
@@ -33,22 +33,22 @@ export interface Task extends BaseEntity {
   priority: Priority;
   dueDate: string | Date;
   projectId?: string;
-  userId: string; // Добавлено
-  notes?: Note[]; // Добавлено
+  userId: string;
+  notes?: Note[];
 }
 
 export interface Event extends BaseEntity {
   title: string;
   date: string | Date;
   time?: string;
-  type: 'meeting' | 'task' | 'reminder';
-  userId: string; // Добавлено
+  type: "meeting" | "task" | "reminder";
+  userId: string;
 }
 
 export enum ProjectStatus {
-  Active = 'active',
-  Completed = 'completed',
-  Archived = 'archived'
+  Active = "active",
+  Completed = "completed",
+  Archived = "archived",
 }
 
 export interface Project extends BaseEntity {
@@ -63,33 +63,33 @@ export interface Project extends BaseEntity {
   members: string[];
   tags: string[];
   color?: string;
-  userId: string; // Добавлено
-  notes?: Note[]; // Добавлено
+  userId: string;
+  notes?: Note[];
 }
 
 export interface Note extends BaseEntity {
   title: string;
   content?: string;
-  category: 'work' | 'personal' | 'idea' | 'other';
+  category: "work" | "personal" | "idea" | "other";
   tags: string[];
   color?: string;
   isPinned: boolean;
   relatedTaskId?: string;
   relatedProjectId?: string;
-  userId: string; // Добавлено
+  userId: string;
 }
 
 export enum Priority {
-  Low = 'low',
-  Medium = 'medium',
-  High = 'high',
+  Low = "low",
+  Medium = "medium",
+  High = "high",
 }
 
 export enum Status {
-  NotStarted = 'not_started',
-  InProgress = 'in_progress',
-  Completed = 'completed',
-  Archived = 'archived',
+  NotStarted = "not_started",
+  InProgress = "in_progress",
+  Completed = "completed",
+  Archived = "archived",
 }
 
 export interface Goal extends BaseEntity {
@@ -103,18 +103,17 @@ export interface Goal extends BaseEntity {
   userId: string;
 }
 
-
 export enum Frequency {
-  Daily = 'daily',
-  Weekly = 'weekly',
-  Monthly = 'monthly',
+  Daily = "daily",
+  Weekly = "weekly",
+  Monthly = "monthly",
 }
 
 export enum TimeOfDay {
-  Morning = 'morning',
-  Afternoon = 'afternoon',
-  Evening = 'evening',
-  Anytime = 'anytime',
+  Morning = "morning",
+  Afternoon = "afternoon",
+  Evening = "evening",
+  Anytime = "anytime",
 }
 
 export interface Habit extends BaseEntity {
@@ -124,6 +123,11 @@ export interface Habit extends BaseEntity {
   timeOfDay: TimeOfDay;
   streak: number;
   userId: string;
+}
+
+export interface HabitCompletion extends BaseEntity {
+  habitId: string;
+  date: string | Date;
 }
 
 export interface PomodoroSession extends BaseEntity {
@@ -152,7 +156,7 @@ export interface Roadmap extends BaseEntity {
 export interface RoadmapNode {
   id: string;
   roadmapId: string;
-  type: 'goal' | 'step' | 'milestone' | 'project' | 'task';
+  type: "goal" | "step" | "milestone" | "project" | "task";
   positionX: number;
   positionY: number;
   data: Record<string, any>;
@@ -169,11 +173,11 @@ export type ApiResponse<T> = {
   data: T | null;
   error: string | null;
   status: number;
-}
+};
 
 export interface Theme {
   primary: string;
   background: string;
   text: string;
   secondary: string;
-};
+}

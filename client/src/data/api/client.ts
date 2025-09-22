@@ -1,6 +1,7 @@
-import type { ApiResponse } from '@time-management/shared-types';
+import type { ApiResponse } from "@time-management/shared-types";
+import { logger } from "../../utils/logger";
 
-const API_URL = 'http://localhost:3005/api';
+const API_URL = "http://localhost:3005/api";
 const TIMEOUT = 5000; // 5 seconds
 
 class ApiClient {
@@ -10,12 +11,22 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
+    const token = localStorage.getItem("token");
 
     try {
+      logger.debug(
+        "Trying to fetch data...",
+        endpoint,
+        options,
+        token,
+        controller.signal
+      );
+
       const response = await fetch(`${API_URL}${endpoint}`, {
         ...options,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
           ...options.headers,
         },
         signal: controller.signal,
@@ -36,12 +47,12 @@ class ApiClient {
       };
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       if (error instanceof Error) {
-        if (error.name === 'AbortError') {
+        if (error.name === "AbortError") {
           return {
             data: null,
-            error: 'Request timeout',
+            error: "Request timeout",
             status: 408,
           };
         }
@@ -51,10 +62,10 @@ class ApiClient {
           status: 500,
         };
       }
-      
+
       return {
         data: null,
-        error: 'Unknown error occurred',
+        error: "Unknown error occurred",
         status: 500,
       };
     }
@@ -66,23 +77,23 @@ class ApiClient {
 
   async post<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async put<T>(endpoint: string, data: any): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 }
 
-export const apiClient = new ApiClient(); 
+export const apiClient = new ApiClient();

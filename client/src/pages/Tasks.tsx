@@ -14,7 +14,7 @@ const Tasks: React.FC = () => {
     description: "",
     dueDate: format(new Date(), "yyyy-MM-dd"),
     priority: Priority.Medium,
-    status: TaskStatus.TODO,
+    status: TaskStatus.todo,
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,7 +38,7 @@ const Tasks: React.FC = () => {
         description: "",
         dueDate: format(new Date(), "yyyy-MM-dd"),
         priority: Priority.Medium,
-        status: TaskStatus.TODO,
+        status: TaskStatus.todo,
       });
     } catch (error) {
       console.error("Error adding task:", error);
@@ -73,11 +73,11 @@ const Tasks: React.FC = () => {
     if (!task) return;
 
     const newStatus =
-      currentStatus === TaskStatus.TODO
-        ? TaskStatus.InProgress
-        : currentStatus === TaskStatus.InProgress
-        ? TaskStatus.Completed
-        : TaskStatus.TODO;
+      currentStatus === TaskStatus.todo
+        ? TaskStatus.in_progress
+        : currentStatus === TaskStatus.in_progress
+        ? TaskStatus.completed
+        : TaskStatus.todo;
 
     try {
       // Упрощенный вызов - контекст сам обновит связанные проекты
@@ -139,7 +139,7 @@ const Tasks: React.FC = () => {
               description: "",
               dueDate: format(new Date(), "yyyy-MM-dd"),
               priority: Priority.Medium,
-              status: TaskStatus.TODO,
+              status: TaskStatus.todo,
             });
             setShowAddTask(true);
           }}
@@ -237,7 +237,7 @@ const Tasks: React.FC = () => {
                     className={`px-2 py-1 rounded-full text-xs ${
                       task.status === "completed"
                         ? "bg-green-100 text-green-800"
-                        : task.status === "in-progress"
+                        : task.status === "in_progress"
                         ? "bg-yellow-100 text-yellow-800"
                         : "bg-gray-100 text-gray-800"
                     }`}
@@ -258,14 +258,14 @@ const Tasks: React.FC = () => {
                   className={`px-3 py-1 rounded-md text-sm ${
                     task.status === "completed"
                       ? "bg-green-100 text-green-800"
-                      : task.status === "in-progress"
+                      : task.status === "in_progress"
                       ? "bg-yellow-100 text-yellow-800"
                       : "bg-gray-100 text-gray-800"
                   }`}
                 >
                   {task.status === "todo"
                     ? "Start"
-                    : task.status === "in-progress"
+                    : task.status === "in_progress"
                     ? "Complete"
                     : "Reopen"}
                 </button>

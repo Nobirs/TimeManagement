@@ -1,7 +1,15 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import type { User } from "@time-management/shared-types";
+import { authService } from "../data/services/authService";
 
 interface AuthContextType {
-  user: any;
+  user: User | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
@@ -10,45 +18,85 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem("user");
+    try {
+      return storedUser && storedUser !== "undefined"
+        ? JSON.parse(storedUser)
+        : null;
+    } catch (e) {
+      console.error("Failed to parse user data", e);
+      return null;
+    }
   });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!user);
 
-  const isAuthenticated = !!user;
+  const tryFastLogin = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const { user, token } = await authService.fastLogin();
+        if (user) {
+          setUser(user);
+          setIsAuthenticated(true);
+          localStorage.setItem("user", JSON.stringify(user));
+          localStorage.setItem("token", token);
+        }
+      }
+    } catch (error) {
+      console.error("Fast login failed:", error);
+      logout(); // Очищаем невалидные данные
+    }
+  };
+
+  // При монтировании компонента пробуем быстрый вход
+  useEffect(() => {
+    tryFastLogin();
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const { loadedUser, token } = await authService.login({
+        email,
+        password,
+      });
 
-    if (!response.ok) throw new Error('Login failed');
-
-    const userData = await response.json();
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+      setUser(loadedUser);
+      localStorage.setItem("user", JSON.stringify(loadedUser));
+      localStorage.setItem("token", token);
+      setIsAuthenticated(true);
+    } catch (err) {
+      console.log("Error in login: " + err);
+      setIsAuthenticated(false);
+    }
   };
 
   const register = async (name: string, email: string, password: string) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    });
+    try {
+      const { user, token } = await authService.register({
+        name,
+        email,
+        password,
+      });
 
-    if (!response.ok) throw new Error('Registration failed');
-
-    const userData = await response.json();
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+      setUser(user);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+      setIsAuthenticated(true);
+    } catch (err) {
+      console.log("Error in register: " + err);
+      setIsAuthenticated(false);
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem("token");
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
+    setIsAuthenticated(false);
   };
 
   const value = {
@@ -65,7 +113,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

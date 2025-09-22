@@ -1,214 +1,286 @@
-import { Request, Response } from 'express';
-import { getData, setData } from '../services/redis';
-import { Project, Task } from '@time-management/shared-types';
+import { Request, Response } from "express";
+import prisma from "../services/prisma";
+import { Status, Priority, TaskStatus } from "@time-management/shared-types";
 
-export const getProjects = async (_req: Request, res: Response): Promise<void> => {
+export const getProjects = async (
+  _req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const projects = await getData('projects') || [];
+    const userId = _req.user?.userId || "1";
+    const projects = await prisma.project.findMany({
+      where: { userId },
+      include: {
+        tasks: true, // ← включает все задачи, связанные с проектом
+      },
+    });
     res.json({ data: projects });
   } catch (error) {
-    console.error('Error fetching projects:', error);
-    res.status(500).json({ error: 'Failed to fetch projects' });
+    console.error("Error fetching projects:", error);
+    res.status(500).json({ error: "Failed to fetch projects" });
   }
 };
 
-export const getProject = async (req: Request, res: Response): Promise<void> => {
+export const getProjectTasks = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const projects = await getData('projects') || [];
-    const project = projects.find((p: Project) => p.id === id);
-    
+    const project = await prisma.project.findUnique({ where: { id } });
+
     if (!project) {
-      res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: "Project not found" });
     }
-    
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        projectId: project?.id,
+      },
+    });
+
+    res.json({ data: tasks });
+  } catch (error) {
+    console.error("Error finding project tasks:", error);
+    res.status(500).json({ error: "Failed to find project tasks" });
+  }
+};
+
+export const getProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        tasks: true, // ← включает все задачи, связанные с проектом
+      },
+    });
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+    }
+
     res.json({ data: project });
   } catch (error) {
-    console.error('Error fetching project:', error);
-    res.status(500).json({ error: 'Failed to fetch project' });
+    console.error("Error fetching project:", error);
+    res.status(500).json({ error: "Failed to fetch project" });
   }
 };
 
-export const createProject = async (req: Request, res: Response): Promise<void> => {
+export const createProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'tasks' | 'progress'> = req.body;
-    
-    if (!project.title?.trim()) {
-      res.status(400).json({ error: 'Project name is required' });
+    const {
+      title,
+      description,
+      status,
+      priority,
+      startDate,
+      endDate,
+      members,
+      tags,
+      color,
+    } = req.body;
+    const userId = req.user?.userId || "1";
+
+    if (!title?.trim()) {
+      res.status(400).json({ error: "Project title is required" });
+      return;
     }
 
-    const newProject: Project = {
-      ...project,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      tasks: [],
-      progress: 0
-    };
+    const newProject = await prisma.project.create({
+      data: {
+        title,
+        description,
+        status: status || Status.NotStarted,
+        priority: priority || Priority.Medium,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        members: members || [],
+        tags: tags || [],
+        color,
+        userId,
+      },
+    });
 
-    const projects = await getData('projects') || [];
-    projects.push(newProject);
-    await setData('projects', projects);
-    
     res.status(201).json({ data: newProject });
   } catch (error) {
-    console.error('Error creating project:', error);
-    res.status(500).json({ error: 'Failed to create project' });
+    console.error("Error creating project:", error);
+    res.status(500).json({ error: "Failed to create project" });
   }
 };
 
-export const updateProject = async (req: Request, res: Response): Promise<void> => {
+export const updateProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const updatedProject: Project = req.body;
-    
-    if (!updatedProject.title?.trim()) {
-      res.status(400).json({ error: 'Project name is required' });
+    const {
+      title,
+      description,
+      status,
+      priority,
+      startDate,
+      endDate,
+      members,
+      tags,
+      color,
+    } = req.body;
+
+    const userId = req.user?.userId || "1";
+
+    if (!title?.trim()) {
+      res.status(400).json({ error: "Project title is required" });
+      return;
     }
 
-    const projects = await getData('projects') || [];
-    const index = projects.findIndex((p: Project) => p.id === id);
-    
-    if (index === -1) {
-      res.status(404).json({ error: 'Project not found' });
-    }
-    
-    const projectToUpdate = {
-      ...updatedProject,
-      id,
-      updatedAt: new Date().toISOString(),
-      createdAt: projects[index].createdAt, // preserve original creation date
-      tasks: updatedProject.tasks // update tasks
-    };
-    
-    projects[index] = projectToUpdate;
-    await setData('projects', projects);
-    
-    res.json({ data: projectToUpdate });
+    const updatedProject = await prisma.project.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        status: status || undefined,
+        priority: priority || undefined,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        members: members || undefined,
+        tags: tags || undefined,
+        color: color || undefined,
+        userId,
+      },
+      include: {
+        tasks: true, // ← включает все задачи, связанные с проектом
+      },
+    });
+
+    res.json({ data: updatedProject });
   } catch (error) {
-    console.error('Error updating project:', error);
-    res.status(500).json({ error: 'Failed to update project' });
+    console.error("Error updating project:", error);
+    res.status(500).json({ error: "Failed to update project" });
   }
 };
 
-export const deleteProject = async (req: Request, res: Response): Promise<void> => {
+export const deleteProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
-    const projects = await getData('projects') || [];
-    const filteredProjects = projects.filter((p: Project) => p.id !== id);
-    
-    if (projects.length === filteredProjects.length) {
-      res.status(404).json({ error: 'Project not found' });
+    const project = await prisma.project.findUnique({ where: { id } });
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
     }
-    
-    await setData('projects', filteredProjects);
+
+    await prisma.project.delete({ where: { id } });
     res.json({ success: true });
   } catch (error) {
-    console.error('Error deleting project:', error);
-    res.status(500).json({ error: 'Failed to delete project' });
+    console.error("Error deleting project:", error);
+    res.status(500).json({ error: "Failed to delete project" });
   }
 };
 
-export const addTaskToProject = async (req: Request, res: Response): Promise<void> => {
+export const addTaskToProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { projectId } = req.params;
-    const task: Task = req.body;
-    
-    if (!task.title?.trim()) {
-      res.status(400).json({ error: 'Task title is required' });
+    const { title, description, status, priority, dueDate } = req.body;
+
+    // Validate required fields
+    if (!title?.trim()) {
+      res.status(400).json({ error: "Task title is required" });
+      return;
+    }
+    if (!dueDate || isNaN(new Date(dueDate).getTime())) {
+      res.status(400).json({ error: "Invalid or missing due date" });
+      return;
     }
 
-    const projects = await getData('projects') || [];
-    const projectIndex = projects.findIndex((p: Project) => p.id === projectId);
-    
-    if (projectIndex === -1) {
-      res.status(404).json({ error: 'Project not found' });
+    const userId = req.user?.userId || "1";
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId }, // Ensure project belongs to user
+    });
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
     }
 
-    const newTask: Task = {
-      ...task,
-      id: task.id || crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: task.status || 'todo'
-    };
+    // Validate status and priority enums
+    const validStatus = Object.values(TaskStatus).includes(status)
+      ? status
+      : TaskStatus.todo;
+    const validPriority = Object.values(Priority).includes(priority)
+      ? priority
+      : Priority.Medium;
 
-    const updatedProject = {
-      ...projects[projectIndex],
-      tasks: [...projects[projectIndex].tasks, newTask],
-      updatedAt: new Date().toISOString()
-    };
+    const newTask = await prisma.task.create({
+      data: {
+        title,
+        description,
+        status: validStatus,
+        priority: validPriority,
+        dueDate: new Date(dueDate),
+        user: {
+          connect: { id: userId }, // Required for TaskCreateInput
+        },
+        project: {
+          connect: { id: projectId }, // Connect to project
+        },
+      },
+    });
 
-    projects[projectIndex] = updatedProject;
-    await setData('projects', projects);
-    
-    res.status(201).json({ data: updatedProject });
+    res.status(201).json({ data: newTask });
   } catch (error) {
-    console.error('Error adding task to project:', error);
-    res.status(500).json({ error: 'Failed to add task to project' });
+    console.error("Error adding task to project:", error);
+    res.status(500).json({ error: "Failed to add task to project" });
   }
 };
 
-export const removeTaskFromProject = async (req: Request, res: Response): Promise<void> => {
+export const removeTaskFromProject = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { projectId, taskId } = req.params;
-    const projects = await getData('projects') || [];
-    const projectIndex = projects.findIndex((p: Project) => p.id === projectId);
-    
-    if (projectIndex === -1) {
-      res.status(404).json({ error: 'Project not found' });
+
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { tasks: true },
+    });
+
+    if (!project) {
+      res.status(404).json({ error: "Project not found" });
+      return;
     }
 
-    const updatedTasks = projects[projectIndex].tasks.filter((t: Task) => t.id !== taskId);
-    
-    if (updatedTasks.length === projects[projectIndex].tasks.length) {
-      res.status(404).json({ error: 'Task not found in project' });
+    const taskExists = project.tasks.some((task) => task.id === taskId);
+    if (!taskExists) {
+      res.status(404).json({ error: "Task not found in project" });
+      return;
     }
 
-    const updatedProject = {
-      ...projects[projectIndex],
-      tasks: updatedTasks,
-      updatedAt: new Date().toISOString()
-    };
+    await prisma.project.update({
+      where: { id: projectId },
+      data: {
+        tasks: {
+          disconnect: { id: taskId },
+        },
+      },
+    });
 
-    projects[projectIndex] = updatedProject;
-    await setData('projects', projects);
-    
-    res.json({ data: updatedProject });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Error removing task from project:', error);
-    res.status(500).json({ error: 'Failed to remove task from project' });
-  }
-};
-
-export const updateProjectProgress = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { projectId } = req.params;
-    const { progress } = req.body;
-    
-    if (typeof progress !== 'number' || progress < 0 || progress > 100) {
-      res.status(400).json({ error: 'Progress must be a number between 0 and 100' });
-    }
-
-    const projects = await getData('projects') || [];
-    const projectIndex = projects.findIndex((p: Project) => p.id === projectId);
-    
-    if (projectIndex === -1) {
-      res.status(404).json({ error: 'Project not found' });
-    }
-
-    const updatedProject = {
-      ...projects[projectIndex],
-      progress: Math.max(0, Math.min(100, progress)),
-      updatedAt: new Date().toISOString()
-    };
-
-    projects[projectIndex] = updatedProject;
-    await setData('projects', projects);
-    
-    res.json({ data: updatedProject });
-  } catch (error) {
-    console.error('Error updating project progress:', error);
-    res.status(500).json({ error: 'Failed to update project progress' });
+    console.error("Error removing task from project:", error);
+    res.status(500).json({ error: "Failed to remove task from project" });
   }
 };

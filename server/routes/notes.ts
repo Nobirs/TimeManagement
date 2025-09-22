@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router } from "express";
 import {
   getNotes,
   getNote,
@@ -7,18 +7,21 @@ import {
   deleteNote,
   getNotesByCategory,
   getNotesByTag,
-  getPinnedNotes
-} from '../controllers/notes';
+  getPinnedNotes,
+} from "../controllers/notes";
+import { auth } from "../middleware/auth";
 
 const router = Router();
 
-router.get('/', getNotes);
-router.get('/:id', getNote);
-router.post('/', createNote);
-router.put('/:id', updateNote);
-router.delete('/:id', deleteNote);
-router.get('/category/:category', getNotesByCategory);
-router.get('/tag/:tag', getNotesByTag);
-router.get('/pinned', getPinnedNotes);
+router.use(auth);
+
+router.get("/", getNotes);
+router.get("/:id", getNote);
+router.post("/", createNote);
+router.put("/:id", updateNote);
+router.delete("/:id", deleteNote);
+router.get("/category/:category", getNotesByCategory);
+router.get("/tag/:tag", getNotesByTag);
+router.get("/pinned", getPinnedNotes);
 
 export default router;

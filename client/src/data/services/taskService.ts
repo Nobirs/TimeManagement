@@ -1,34 +1,84 @@
-import type { Task } from '@time-management/shared-types';
-import { api } from './api';
+import { logger } from "../../utils/logger";
+import { apiClient as api } from "../api/client";
+import type { Task } from "@time-management/shared-types";
+import { storageService } from "../services/storageService";
 
-export const taskService = {
-  getAll: async (): Promise<Task[]> => {
-    const response = await api.get('/tasks');
-    return response.data.data || [];
-  },
+class TaskService {
+  private readonly STORAGE_KEY = "tasks";
 
-  getById: async (id: string): Promise<Task> => {
-    const response = await api.get(`/tasks/${id}`);
-    return response.data.data;
-  },
+  async getAll(): Promise<Task[]> {
+    try {
+      const response = await api.get<Task[]>("/tasks");
+      if (response.data) {
+        storageService.set(this.STORAGE_KEY, response.data);
+        return response.data;
+      }
+    } catch (err) {
+      logger.warn("Error fetching tasks:", err);
+    } finally {
+      return storageService.get<Task[]>(this.STORAGE_KEY) || [];
+    }
+  }
 
-  create: async (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> => {
+  async getById(id: string): Promise<Task | null> {
+    try {
+      const response = await api.get<Task>(`/tasks/${id}`);
+      if (response.data) {
+        return response.data;
+      }
+      throw new Error("Task not found");
+    } catch (err) {
+      logger.warn("Error fetching task:", err);
+      return null;
+    }
+  }
+
+  async create(
+    task: Omit<Task, "id" | "createdAt" | "updatedAt">
+  ): Promise<Task> {
     if (!task.title.trim()) {
-      throw new Error('Task title is required');
+      throw new Error("Task title is required");
     }
-    const response = await api.post('/tasks', task);
-    return response.data.data;
-  },
+    try {
+      const response = await api.post<Task>("/tasks", task);
+      if (response.data) {
+        return response.data;
+      }
+      throw new Error("Failed to create task");
+    } catch (err) {
+      logger.warn("Error creating task:", err);
+      throw err;
+    }
+  }
 
-  update: async (id: string, taskData: Partial<Task>): Promise<Task> => {
+  async update(id: string, taskData: Partial<Task>): Promise<Task> {
     if (taskData.title && !taskData.title.trim()) {
-      throw new Error('Task title is required');
+      throw new Error("Task title is required");
     }
-    const response = await api.put(`/tasks/${id}`, taskData);
-    return response.data.data;
-  },
+    try {
+      const response = await api.put<Task>(`/tasks/${id}`, taskData);
+      if (response.data) {
+        return response.data;
+      }
+      throw new Error("Failed to update task");
+    } catch (err) {
+      logger.warn("Error updating task:", err);
+      throw err;
+    }
+  }
 
-  delete: async (id: string): Promise<void> => {
-    await api.delete(`/tasks/${id}`);
-  },
-}; 
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await api.delete<Task>(`/tasks/${id}`);
+      if (response.status === 200) {
+        return;
+      }
+      throw new Error("Failed to delete task");
+    } catch (err) {
+      logger.warn("Error deleting task:", err);
+      throw err;
+    }
+  }
+}
+
+export const taskService = new TaskService();
